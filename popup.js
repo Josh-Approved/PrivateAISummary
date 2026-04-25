@@ -158,6 +158,7 @@ async function runSummary() {
       type,
       length,
       format: 'plain-text',
+      outputLanguage: 'en',
       sharedContext: extracted.type === 'youtube'
         ? 'This is a YouTube video transcript.'
         : 'This is a web article or webpage.',
