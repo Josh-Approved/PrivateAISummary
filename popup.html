@@ -650,15 +650,16 @@
         <!-- id="summaryType" — popup.js reads this value when Summarize is clicked -->
         <select id="summaryType">
           <!-- Each <option> has a value (used in code) and display text (shown to user) -->
-          <option value="key-points">Key Points</option> <!-- bulleted list of main ideas -->
-          <option value="tldr">TL;DR</option>            <!-- "Too Long; Didn't Read" — short prose -->
-          <option value="teaser">Teaser</option>         <!-- an enticing intro paragraph -->
-          <option value="headline">Headline</option>     <!-- single sentence summary -->
+          <option value="key-points">Key Points</option>
+          <option value="tldr">TL;DR</option>
+          <option value="teaser">Teaser</option>
+          <option value="headline">Headline</option>
+          <option value="recipe">🍳 Get Recipe</option>
         </select>
       </div>
 
       <!-- LENGTH DROPDOWN — chooses how long the summary should be -->
-      <div class="select-wrap">
+      <div class="select-wrap" id="lengthWrap">
         <div class="select-label">Length</div>
         <!-- id="summaryLength" — popup.js reads this value when Summarize is clicked -->
         <select id="summaryLength">
