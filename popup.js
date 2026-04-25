@@ -37,6 +37,11 @@ async function init() {
     els.pageTypeBadge.className = 'page-type-badge youtube';
   }
 
+  document.getElementById('flagLink').addEventListener('click', e => {
+    e.preventDefault();
+    chrome.tabs.create({ url: 'chrome://flags/#optimization-guide-on-device-model' });
+  });
+
   if (!supported) {
     els.controls.style.display = 'none';
     els.unsupported.classList.add('visible');
