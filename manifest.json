@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "PrivateSummary",
+  "name": "Private AI Summary",
   "version": "1.0.0",
   "description": "100% on-device AI summarization. Your content never leaves your browser.",
   "action": {
