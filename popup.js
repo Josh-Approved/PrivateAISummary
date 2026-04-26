@@ -256,8 +256,18 @@ function extractRecipeFromPage() {
         ? (Array.isArray(data.recipeYield) ? data.recipeYield[0] : data.recipeYield).toString().trim()
         : null;
 
+      const authorRaw = data.author;
+      const author = !authorRaw ? null
+        : typeof authorRaw === 'string' ? authorRaw
+        : Array.isArray(authorRaw) ? authorRaw.map(a => a.name || a).filter(Boolean).join(', ')
+        : authorRaw.name || null;
+
+      const siteName = document.querySelector('meta[property="og:site_name"]')?.content
+        || document.querySelector('meta[name="application-name"]')?.content
+        || null;
+
       if (ingredients.length || instructions.length) {
-        return { title, ingredients, instructions, prepTime, cookTime, totalTime, servings };
+        return { title, ingredients, instructions, prepTime, cookTime, totalTime, servings, author, siteName, url: window.location.href };
       }
 
     } catch (e) { continue; }
@@ -302,7 +312,10 @@ function extractRecipeFromPage() {
     }
   }
 
-  return { title, ingredients, instructions, prepTime: null, cookTime: null, totalTime: null, servings: null };
+  const siteName = document.querySelector('meta[property="og:site_name"]')?.content
+    || document.querySelector('meta[name="application-name"]')?.content
+    || null;
+  return { title, ingredients, instructions, prepTime: null, cookTime: null, totalTime: null, servings: null, author: null, siteName, url: window.location.href };
 }
 
 // ── RECIPE TAB ────────────────────────────────────────────────────────────────
@@ -323,32 +336,34 @@ function openRecipeTab(recipe) {
   const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
   <title>${recipe.title}</title>
   <style>
-    @page { size: portrait; margin: 18mm 18mm 18mm 18mm; }
-    *, *::before, *::after { box-sizing: border-box; }
-    body { font-family: Georgia, serif; color: #1a1a1a; line-height: 1.6; margin: 0; }
-    h1 { font-size: 24px; margin: 0 0 6px; }
-    .meta { color: #666; font-size: 12px; margin-bottom: 24px; font-family: monospace; letter-spacing: 0.3px; }
-    h2 { font-size: 10px; text-transform: uppercase; letter-spacing: 2px; color: #888;
-         border-bottom: 1px solid #ddd; padding-bottom: 5px; margin: 0 0 14px; }
+    @page { size: letter portrait; margin: 20mm; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Georgia, serif; color: #1a1a1a; line-height: 1.6; padding: 32px 40px; max-width: 860px; margin: 0 auto; }
+    @media print { body { padding: 0; max-width: none; margin: 0; } }
+    .header { text-align: center; margin-bottom: 28px; }
+    h1 { font-size: 26px; margin-bottom: 10px; }
+    .meta { color: #666; font-size: 12px; font-family: monospace; letter-spacing: 0.3px; }
+    .meta span { display: inline-block; margin: 0 10px; }
+    .source { font-size: 10px; color: #999; font-family: monospace; margin-top: 8px; }
+    .source a { color: #999; text-decoration: none; }
+    .source a:hover { text-decoration: underline; }
+    .divider { border: none; border-top: 1px solid #ddd; margin-bottom: 24px; }
     .columns { display: grid; grid-template-columns: 2fr 3fr; gap: 32px; align-items: start; }
-    /* Ingredients — checkbox list */
-    .ingredients { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 9px; }
+    h2 { font-size: 10px; text-transform: uppercase; letter-spacing: 2px; color: #888;
+         border-bottom: 1px solid #ddd; padding-bottom: 5px; margin-bottom: 14px; }
+    .ingredients { list-style: none; display: flex; flex-direction: column; gap: 9px; }
     .ingredients li { display: flex; align-items: flex-start; gap: 9px; font-size: 13px; line-height: 1.5; }
-    .cb {
-      flex-shrink: 0;
-      width: 13px; height: 13px;
-      border: 1.5px solid #aaa;
-      border-radius: 2px;
-      margin-top: 2px;
-      display: inline-block;
-    }
-    /* Instructions — numbered list */
-    .instructions { padding-left: 20px; margin: 0; display: flex; flex-direction: column; gap: 12px; }
-    .instructions li { font-size: 13px; line-height: 1.65; padding-left: 4px; }
-    @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+    .cb { flex-shrink: 0; width: 13px; height: 13px; border: 1.5px solid #aaa;
+          border-radius: 2px; margin-top: 2px; display: inline-block; }
+    .instructions { list-style: decimal; padding-left: 18px; display: flex; flex-direction: column; gap: 12px; }
+    .instructions li { font-size: 13px; line-height: 1.65; }
   </style></head><body>
-  <h1>${recipe.title}</h1>
-  ${meta.length ? `<p class="meta">${meta.join('&nbsp;&nbsp;&nbsp;·&nbsp;&nbsp;&nbsp;')}</p>` : ''}
+  <div class="header">
+    <h1>${recipe.title}</h1>
+    ${meta.length ? `<p class="meta">${meta.map(m => `<span>${m}</span>`).join('')}</p>` : ''}
+  ${recipe.url ? `<p class="source">${[recipe.siteName, recipe.author ? `By ${recipe.author}` : null, `<a href="${recipe.url}">${recipe.url}</a>`].filter(Boolean).join('&nbsp;&nbsp;·&nbsp;&nbsp;')}</p>` : ''}
+  </div>
+  <hr class="divider">
   <div class="columns">
     ${ingredientRows ? `<div><h2>Ingredients</h2><ul class="ingredients">${ingredientRows}</ul></div>` : '<div></div>'}
     ${instructionRows ? `<div><h2>Instructions</h2><ol class="instructions">${instructionRows}</ol></div>` : '<div></div>'}
