@@ -209,11 +209,13 @@ function extractRecipeFromPage() {
     try {
       let data = JSON.parse(script.textContent);
 
-      // Handle arrays and @graph wrappers
-      if (Array.isArray(data)) data = data.find(d => d['@type'] === 'Recipe') || data[0];
-      if (data?.['@graph']) data = data['@graph'].find(d => d['@type'] === 'Recipe') || data;
+      const isRecipeType = t => t === 'Recipe' || (Array.isArray(t) && t.includes('Recipe'));
 
-      if (data?.['@type'] !== 'Recipe') continue;
+      // Handle arrays and @graph wrappers
+      if (Array.isArray(data)) data = data.find(d => isRecipeType(d['@type'])) || data[0];
+      if (data?.['@graph']) data = data['@graph'].find(d => isRecipeType(d['@type'])) || data;
+
+      if (!isRecipeType(data?.['@type'])) continue;
 
       const title = data.name || document.title;
 
@@ -233,10 +235,14 @@ function extractRecipeFromPage() {
       }).filter(Boolean);
 
       // Optional metadata
-      const parseDuration = iso => {
-        if (!iso) return null;
-        const h = (iso.match(/(\d+)H/) || [])[1];
-        const m = (iso.match(/(\d+)M/) || [])[1];
+      const parseDuration = val => {
+        if (!val) return null;
+        if (typeof val !== 'string') return null;
+        // Already human-readable (e.g. "30 mins", "1 hour 15 minutes")
+        if (!val.startsWith('P')) return val.trim() || null;
+        // ISO 8601 duration (e.g. "PT1H30M")
+        const h = (val.match(/(\d+)H/) || [])[1];
+        const m = (val.match(/(\d+)M/) || [])[1];
         const parts = [];
         if (h) parts.push(`${h} hr`);
         if (m) parts.push(`${m} min`);
