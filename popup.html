@@ -23,7 +23,7 @@
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      width: 380px;
+      width: 500px;
       min-height: 200px;
       background: var(--bg);
       color: var(--text);
@@ -319,6 +319,42 @@
       margin-bottom: 6px;
     }
     .critique-label:first-child { margin-top: 0; }
+
+    .critique-disclaimer {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.3px;
+      color: #ffb432;
+      background: rgba(255, 180, 50, 0.08);
+      border: 1px solid rgba(255, 180, 50, 0.25);
+      border-radius: var(--radius);
+      padding: 7px 10px;
+      line-height: 1.5;
+      margin-bottom: 12px;
+    }
+
+    .tone-pills {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-bottom: 8px;
+    }
+
+    .tone-pill {
+      font-family: 'DM Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      color: var(--border);
+    }
+
+    .tone-pill.active-neutral    { border-color: #888;                       color: #aaa; }
+    .tone-pill.active-emotional  { border-color: rgba(255,180,50,0.6);  color: #ffb432; background: rgba(255,180,50,0.08); }
+    .tone-pill.active-persuasive { border-color: rgba(109,160,255,0.6); color: #6da0ff; background: rgba(109,160,255,0.08); }
+    .tone-pill.active-alarming   { border-color: rgba(255,107,107,0.6); color: #ff6b6b; background: rgba(255,107,107,0.08); }
 
     /* ── Recipe styles ── */
     .recipe-heading {

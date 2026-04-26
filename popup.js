@@ -190,7 +190,7 @@ async function runSummary() {
       const prompt = 'You are a critical news analyst. Analyze the article below and respond with exactly these five sections using these exact headers:\n\n'
         + 'KEY POINTS:\n3-5 bullet points of the main claims and facts.\n\n'
         + "WHAT'S MISSING:\nWhat important context, perspectives, or information does the article omit?\n\n"
-        + 'TONE CHECK:\nIs the language neutral, emotional, alarming, or persuasive? Give a specific example from the article.\n\n'
+        + 'TONE CHECK:\nFirst, write one word only on its own line: NEUTRAL, EMOTIONAL, PERSUASIVE, or ALARMING. Then on the next line explain your choice with a specific example from the article.\n\n'
         + 'WHO BENEFITS:\nWhose interests does this story serve? Whose agenda might it advance?\n\n'
         + 'QUESTIONS TO ASK:\n3-4 questions a skeptical reader should investigate further.\n\n'
         + 'Article title: ' + extracted.title + '\n\n'
@@ -567,6 +567,11 @@ function displayNewsCritique(rawText) {
   els.outputLabel.textContent = 'NEWS CRITIQUE';
   els.summaryBox.innerHTML = '';
 
+  var disclaimer = document.createElement('p');
+  disclaimer.className = 'critique-disclaimer';
+  disclaimer.textContent = 'AI-generated analysis using a local model. Check all facts for accuracy.';
+  els.summaryBox.appendChild(disclaimer);
+
   for (var j = 0; j < sections.length; j++) {
     var sLabel = sections[j].label;
     var sText = sections[j].text;
@@ -582,6 +587,40 @@ function displayNewsCritique(rawText) {
     }).filter(function(l) {
       return l.length > 3;
     });
+
+    // Special rendering for Tone Check
+    if (sLabel === 'Tone Check') {
+      var toneOptions = ['neutral', 'emotional', 'persuasive', 'alarming'];
+      var firstWord = sText.trim().split(/\s+/)[0].toLowerCase().replace(/[^a-z]/g, '');
+      var detected = toneOptions.indexOf(firstWord) !== -1 ? firstWord : null;
+
+      if (!detected) {
+        var lower = sText.toLowerCase();
+        for (var ti = 0; ti < toneOptions.length; ti++) {
+          if (lower.indexOf(toneOptions[ti]) !== -1) { detected = toneOptions[ti]; break; }
+        }
+      }
+
+      var pillRow = document.createElement('div');
+      pillRow.className = 'tone-pills';
+      var toneLabels = ['Neutral', 'Emotional', 'Persuasive', 'Alarming'];
+      toneLabels.forEach(function(tLabel) {
+        var pill = document.createElement('span');
+        pill.className = 'tone-pill';
+        if (detected === tLabel.toLowerCase()) pill.className += ' active-' + tLabel.toLowerCase();
+        pill.textContent = tLabel;
+        pillRow.appendChild(pill);
+      });
+      els.summaryBox.appendChild(pillRow);
+
+      var explanationLines = (detected && firstWord === detected) ? lines.slice(1) : lines;
+      if (explanationLines.length > 0) {
+        var tp = document.createElement('p');
+        tp.textContent = explanationLines.join(' ');
+        els.summaryBox.appendChild(tp);
+      }
+      continue;
+    }
 
     if (lines.length > 1) {
       var ul = document.createElement('ul');
