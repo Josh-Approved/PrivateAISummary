@@ -18,8 +18,9 @@ const els = {
   errorText:     $('errorText'),
   btnCopy:       $('btnCopy'),
   summaryType:   $('summaryType'),
-  summaryLength: $('summaryLength'),
-  lengthWrap:    $('lengthWrap'),   // the wrapper div around the Length dropdown
+  summaryLength:   $('summaryLength'),
+  summaryLanguage: $('summaryLanguage'),
+  lengthWrap:      $('lengthWrap'),
 };
 
 let lastSummaryText = '';
@@ -49,9 +50,10 @@ async function init() {
   }
 
   // Restore saved settings
-  const saved = await chrome.storage.local.get(['summaryType', 'summaryLength']);
-  if (saved.summaryType)   els.summaryType.value   = saved.summaryType;
-  if (saved.summaryLength) els.summaryLength.value = saved.summaryLength;
+  const saved = await chrome.storage.local.get(['summaryType', 'summaryLength', 'summaryLanguage']);
+  if (saved.summaryType)     els.summaryType.value     = saved.summaryType;
+  if (saved.summaryLength)   els.summaryLength.value   = saved.summaryLength;
+  if (saved.summaryLanguage) els.summaryLanguage.value = saved.summaryLanguage;
 
   // Apply recipe UI state on load if it was the last saved setting
   applyRecipeMode(saved.summaryType === 'recipe');
@@ -68,17 +70,15 @@ async function init() {
 
   els.summaryLength.addEventListener('change', () =>
     chrome.storage.local.set({ summaryLength: els.summaryLength.value }));
+
+  els.summaryLanguage.addEventListener('change', () =>
+    chrome.storage.local.set({ summaryLanguage: els.summaryLanguage.value }));
 }
 
 // Shows/hides the Length dropdown and updates button label for recipe mode
 function applyRecipeMode(isRecipe) {
   els.lengthWrap.style.display = isRecipe ? 'none' : '';
-  els.btnSummarize.querySelector('span') 
-    ? els.btnSummarize.querySelector('span').textContent = isRecipe ? 'Extract Recipe' : 'Summarize this page'
-    : null;
-  // Update the text node directly (the button has an SVG + text node)
-  const textNode = [...els.btnSummarize.childNodes].find(n => n.nodeType === 3);
-  if (textNode) textNode.textContent = isRecipe ? ' Extract Recipe' : ' Summarize this page';
+  els.btnSummarize.querySelector('span').textContent = isRecipe ? 'Extract Recipe' : 'Summarize this page';
 }
 
 // ── SUPPORT CHECK ─────────────────────────────────────────────────────────────
@@ -158,7 +158,7 @@ async function runSummary() {
       type,
       length,
       format: 'plain-text',
-      outputLanguage: 'en',
+      outputLanguage: els.summaryLanguage.value,
       sharedContext: extracted.type === 'youtube'
         ? 'This is a YouTube video transcript.'
         : 'This is a web article or webpage.',
