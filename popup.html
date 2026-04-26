@@ -9,15 +9,15 @@
 
   <style>
     :root {
-      --bg:        #0e0e10;
-      --surface:   #16161a;
-      --border:    #2a2a30;
-      --accent:    #c8f165;
-      --accent-dim:#8aaa3e;
-      --text:      #e8e8ec;
-      --muted:     #6b6b78;
-      --danger:    #ff6b6b;
-      --radius:    10px;
+      --bg:         #f8f9fb;
+      --surface:    #ffffff;
+      --border:     #e0e0ea;
+      --accent:     #c8f165;
+      --accent-dim: #4d7c00;
+      --text:       #17171b;
+      --muted:      #6e6e7a;
+      --danger:     #c42b2b;
+      --radius:     10px;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -48,18 +48,15 @@
       gap: 10px;
     }
 
-    /* ── Logo icon: dark background with shield + sparkle ── */
     .logo-icon {
       width: 34px;
       height: 34px;
-      background: var(--surface);
-      border: 1px solid var(--border);
+      background: var(--accent);
       border-radius: 8px;
       display: flex;
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
-      position: relative;
     }
 
     .logo-icon svg {
@@ -74,16 +71,14 @@
       line-height: 1.1;
     }
 
-    /* "Private AI" on top in accent green, small */
     .logo-text-top {
       font-family: 'DM Mono', monospace;
       font-size: 9px;
       letter-spacing: 1.5px;
       text-transform: uppercase;
-      color: var(--accent);
+      color: var(--accent-dim);
     }
 
-    /* "Summary" below in the serif wordmark font */
     .logo-text-main {
       font-family: 'DM Serif Display', serif;
       font-size: 17px;
@@ -122,15 +117,15 @@
     }
 
     .page-type-badge.article {
-      background: rgba(100, 160, 255, 0.12);
-      color: #6da0ff;
-      border: 1px solid rgba(100, 160, 255, 0.25);
+      background: rgba(50, 100, 210, 0.07);
+      color: #2d5cc4;
+      border: 1px solid rgba(50, 100, 210, 0.2);
     }
 
     .page-type-badge.youtube {
-      background: rgba(255, 80, 80, 0.12);
-      color: #ff6060;
-      border: 1px solid rgba(255, 80, 80, 0.25);
+      background: rgba(185, 40, 40, 0.07);
+      color: #b82828;
+      border: 1px solid rgba(185, 40, 40, 0.2);
     }
 
     .page-title {
@@ -174,7 +169,7 @@
       transition: border-color 0.15s;
     }
 
-    select:focus { border-color: var(--accent); }
+    select:focus { border-color: var(--accent-dim); }
 
     .select-wrap::after {
       content: '▾';
@@ -199,7 +194,7 @@
     .btn-summarize {
       width: 100%;
       background: var(--accent);
-      color: #0e0e10;
+      color: #17171b;
       border: none;
       border-radius: var(--radius);
       font-family: 'DM Sans', sans-serif;
@@ -251,9 +246,9 @@
 
     .btn-copy {
       background: none;
-      border: 1px solid #4a4a58;
+      border: 1px solid #c8c8d8;
       border-radius: 6px;
-      color: #a0a0b4;
+      color: #9090a8;
       font-family: 'DM Mono', monospace;
       font-size: 10px;
       padding: 3px 8px;
@@ -262,8 +257,8 @@
       letter-spacing: 0.3px;
     }
 
-    .btn-copy:hover { border-color: var(--accent); color: var(--accent); }
-    .btn-copy.copied { color: var(--accent); border-color: var(--accent); }
+    .btn-copy:hover { border-color: var(--accent-dim); color: var(--accent-dim); }
+    .btn-copy.copied { color: var(--accent-dim); border-color: var(--accent-dim); }
 
     .summary-box {
       background: var(--surface);
@@ -302,7 +297,7 @@
 
     .summary-box li::before {
       content: '→';
-      color: var(--accent);
+      color: var(--accent-dim);
       font-family: 'DM Mono', monospace;
       flex-shrink: 0;
       margin-top: 1px;
@@ -313,7 +308,7 @@
       font-size: 9px;
       font-family: 'DM Mono', monospace;
       letter-spacing: 1.5px;
-      color: #6da0ff;
+      color: #2d5cc4;
       text-transform: uppercase;
       margin-top: 14px;
       margin-bottom: 6px;
@@ -324,9 +319,9 @@
       font-family: 'DM Mono', monospace;
       font-size: 10px;
       letter-spacing: 0.3px;
-      color: #ffb432;
-      background: rgba(255, 180, 50, 0.08);
-      border: 1px solid rgba(255, 180, 50, 0.25);
+      color: #7a5200;
+      background: rgba(180, 120, 0, 0.07);
+      border: 1px solid rgba(180, 120, 0, 0.22);
       border-radius: var(--radius);
       padding: 7px 10px;
       line-height: 1.5;
@@ -348,20 +343,20 @@
       padding: 4px 10px;
       border-radius: 20px;
       border: 1px solid var(--border);
-      color: var(--border);
+      color: var(--muted);
     }
 
-    .tone-pill.active-neutral    { border-color: #888;                       color: #aaa; }
-    .tone-pill.active-emotional  { border-color: rgba(255,180,50,0.6);  color: #ffb432; background: rgba(255,180,50,0.08); }
-    .tone-pill.active-persuasive { border-color: rgba(109,160,255,0.6); color: #6da0ff; background: rgba(109,160,255,0.08); }
-    .tone-pill.active-alarming   { border-color: rgba(255,107,107,0.6); color: #ff6b6b; background: rgba(255,107,107,0.08); }
+    .tone-pill.active-neutral    { border-color: #aaa;                          color: #555; }
+    .tone-pill.active-emotional  { border-color: rgba(160,100,0,0.45);   color: #7a5200; background: rgba(180,120,0,0.07); }
+    .tone-pill.active-persuasive { border-color: rgba(45,92,196,0.4);   color: #2d5cc4; background: rgba(45,92,196,0.06); }
+    .tone-pill.active-alarming   { border-color: rgba(185,40,40,0.4);   color: #b82828; background: rgba(185,40,40,0.06); }
 
     /* ── Recipe styles ── */
     .recipe-heading {
       font-size: 10px;
       font-family: 'DM Mono', monospace;
       letter-spacing: 1px;
-      color: var(--accent);
+      color: var(--accent-dim);
       text-transform: uppercase;
       margin-top: 14px;
       margin-bottom: 8px;
@@ -394,7 +389,7 @@
 
     .recipe-ingredients li::before {
       content: '·';
-      color: var(--accent);
+      color: var(--accent-dim);
       font-family: 'DM Mono', monospace;
       font-size: 16px;
       flex-shrink: 0;
@@ -432,7 +427,7 @@
       width: 32px;
       height: 32px;
       border: 2px solid var(--border);
-      border-top-color: var(--accent);
+      border-top-color: var(--accent-dim);
       border-radius: 50%;
       animation: spin 0.8s linear infinite;
     }
@@ -448,7 +443,7 @@
 
     .loading-sub {
       font-size: 10px;
-      color: var(--border);
+      color: var(--muted);
       font-family: 'DM Mono', monospace;
       letter-spacing: 0.3px;
     }
@@ -456,8 +451,8 @@
     .error-box {
       display: none;
       margin: 0 16px 16px;
-      background: rgba(255, 107, 107, 0.08);
-      border: 1px solid rgba(255, 107, 107, 0.25);
+      background: rgba(196, 43, 43, 0.06);
+      border: 1px solid rgba(196, 43, 43, 0.2);
       border-radius: var(--radius);
       padding: 12px;
     }
@@ -470,13 +465,13 @@
       line-height: 1.5;
     }
 
-    .error-box a { color: var(--accent); text-decoration: none; }
+    .error-box a { color: var(--accent-dim); text-decoration: none; }
 
     .setup-box {
       display: none;
       margin: 0 16px 16px;
-      background: rgba(109, 160, 255, 0.08);
-      border: 1px solid rgba(109, 160, 255, 0.25);
+      background: rgba(45, 92, 196, 0.05);
+      border: 1px solid rgba(45, 92, 196, 0.18);
       border-radius: var(--radius);
       padding: 13px;
       flex-direction: column;
@@ -491,10 +486,9 @@
       line-height: 1.6;
     }
 
-
     .btn-setup-action {
-      background: #6da0ff;
-      color: #0e0e10;
+      background: #2d5cc4;
+      color: #ffffff;
       border: none;
       border-radius: var(--radius);
       font-family: 'DM Sans', sans-serif;
@@ -506,7 +500,7 @@
       text-align: left;
     }
 
-    .btn-setup-action:hover { background: #89b4ff; }
+    .btn-setup-action:hover { background: #3d6cd4; }
 
     .unsupported {
       display: none;
@@ -530,7 +524,7 @@
       line-height: 1.6;
     }
 
-    .unsupported a { color: var(--accent); text-decoration: none; }
+    .unsupported a { color: var(--accent-dim); text-decoration: none; }
 
     .req-list {
       list-style: none;
@@ -546,7 +540,7 @@
       gap: 7px;
     }
 
-    .req-list li::before { content: '·'; color: var(--accent); }
+    .req-list li::before { content: '·'; color: var(--accent-dim); }
 
     .footer {
       border-top: 1px solid var(--border);
@@ -568,11 +562,11 @@
       align-items: center;
       justify-content: center;
       gap: 6px;
-      background: rgba(245, 200, 66, 0.1);
-      border: 1px solid rgba(245, 200, 66, 0.45);
+      background: rgba(160, 110, 0, 0.07);
+      border: 1px solid rgba(160, 110, 0, 0.3);
       border-radius: 20px;
       padding: 7px 20px;
-      color: #f5c842;
+      color: #7a5500;
       font-family: 'DM Sans', sans-serif;
       font-size: 12px;
       font-weight: 500;
@@ -582,7 +576,7 @@
       width: 100%;
     }
 
-    .btn-coffee:hover { background: rgba(245, 200, 66, 0.18); border-color: #f5c842; }
+    .btn-coffee:hover { background: rgba(160, 110, 0, 0.13); border-color: rgba(160, 110, 0, 0.5); }
 
     .divider { height: 1px; background: var(--border); margin: 0; }
 
@@ -600,7 +594,7 @@
       transition: color 0.15s;
     }
 
-    .btn-learn:hover { color: var(--accent); }
+    .btn-learn:hover { color: var(--accent-dim); }
 
     /* ── About overlay ── */
     .about-overlay {
@@ -669,7 +663,7 @@
       font-size: 9px;
       letter-spacing: 1.5px;
       text-transform: uppercase;
-      color: var(--accent);
+      color: var(--accent-dim);
     }
 
     .about-section p {
@@ -695,7 +689,7 @@
 
     .about-checks li::before {
       content: '✓';
-      color: var(--accent);
+      color: var(--accent-dim);
       font-family: 'DM Mono', monospace;
       font-size: 11px;
       flex-shrink: 0;
@@ -703,7 +697,7 @@
     }
 
     .about-link {
-      color: var(--accent);
+      color: var(--accent-dim);
       text-decoration: none;
       font-family: 'DM Mono', monospace;
       font-size: 11px;
@@ -718,15 +712,12 @@
   <div class="header">
     <div class="logo">
 
-      <!-- New icon: shield with AI sparkle -->
       <div class="logo-icon">
         <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <!-- Shield outline -->
           <path d="M10 2L3.5 4.5V9.5C3.5 13.25 6.25 16.75 10 18C13.75 16.75 16.5 13.25 16.5 9.5V4.5L10 2Z"
-                stroke="#c8f165" stroke-width="1.4" stroke-linejoin="round" fill="rgba(200,241,101,0.08)"/>
-          <!-- Sparkle / AI star in the center -->
-          <path d="M10 7v2M10 11v2M8 9.5H7M13 9.5H12" stroke="#c8f165" stroke-width="1.3" stroke-linecap="round"/>
-          <circle cx="10" cy="9.5" r="1.2" fill="#c8f165"/>
+                stroke="#17171b" stroke-width="1.4" stroke-linejoin="round" fill="rgba(0,0,0,0.08)"/>
+          <path d="M10 7v2M10 11v2M8 9.5H7M13 9.5H12" stroke="#17171b" stroke-width="1.3" stroke-linecap="round"/>
+          <circle cx="10" cy="9.5" r="1.2" fill="#17171b"/>
         </svg>
       </div>
 
