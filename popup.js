@@ -85,7 +85,7 @@ function applyRecipeMode(isRecipe) {
 async function checkSupportAsync() {
   if (!('Summarizer' in self)) return false;
   try {
-    const avail = await Summarizer.availability();
+    const avail = await Summarizer.availability({ outputLanguage: 'en' });
     return avail !== 'unavailable';
   } catch {
     return false;
@@ -354,18 +354,9 @@ function displayRecipe(recipe) {
 
     const ol = document.createElement('ol');
     ol.className = 'recipe-steps';
-    recipe.instructions.forEach((step, i) => {
+    recipe.instructions.forEach(step => {
       const li = document.createElement('li');
-
-      const num = document.createElement('span');
-      num.className = 'step-num';
-      num.textContent = i + 1;
-
-      const text = document.createElement('span');
-      text.textContent = step;
-
-      li.appendChild(num);
-      li.appendChild(text);
+      li.textContent = step;
       ol.appendChild(li);
     });
     els.summaryBox.appendChild(ol);
