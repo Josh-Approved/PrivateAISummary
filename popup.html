@@ -91,32 +91,16 @@
       letter-spacing: -0.3px;
     }
 
-    .privacy-badge {
+    .header-note {
       display: flex;
-      align-items: center;
-      gap: 4px;
-      background: rgba(200, 241, 101, 0.08);
-      border: 1px solid rgba(200, 241, 101, 0.2);
-      border-radius: 20px;
-      padding: 3px 8px;
-      font-size: 10px;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 3px;
       font-family: 'DM Mono', monospace;
-      color: var(--accent);
-      letter-spacing: 0.5px;
-    }
-
-    .privacy-badge::before {
-      content: '';
-      width: 5px;
-      height: 5px;
-      background: var(--accent);
-      border-radius: 50%;
-      animation: pulse 2s infinite;
-    }
-
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.4; }
+      font-size: 9px;
+      color: var(--muted);
+      letter-spacing: 0.3px;
+      text-align: right;
     }
 
     .page-info {
@@ -265,7 +249,7 @@
       color: var(--muted);
     }
 
-    .btn-copy, .btn-print {
+    .btn-copy {
       background: none;
       border: 1px solid #4a4a58;
       border-radius: 6px;
@@ -278,10 +262,8 @@
       letter-spacing: 0.3px;
     }
 
-    .btn-copy:hover, .btn-print:hover { border-color: var(--accent); color: var(--accent); }
+    .btn-copy:hover { border-color: var(--accent); color: var(--accent); }
     .btn-copy.copied { color: var(--accent); border-color: var(--accent); }
-    .btn-print { display: none; }
-    .btn-print.visible { display: block; }
 
     .summary-box {
       background: var(--surface);
@@ -487,7 +469,7 @@
       padding: 10px 16px;
       display: flex;
       align-items: center;
-      justify-content: space-between;
+      justify-content: center;
     }
 
     .footer-note {
@@ -500,20 +482,23 @@
     .btn-coffee {
       display: flex;
       align-items: center;
-      gap: 5px;
-      background: none;
-      border: 1px solid var(--border);
+      justify-content: center;
+      gap: 6px;
+      background: rgba(245, 200, 66, 0.1);
+      border: 1px solid rgba(245, 200, 66, 0.45);
       border-radius: 20px;
-      padding: 4px 10px;
-      color: var(--muted);
+      padding: 7px 20px;
+      color: #f5c842;
       font-family: 'DM Sans', sans-serif;
-      font-size: 11px;
+      font-size: 12px;
+      font-weight: 500;
       cursor: pointer;
       text-decoration: none;
       transition: all 0.15s;
+      width: 100%;
     }
 
-    .btn-coffee:hover { border-color: #f5c842; color: #f5c842; }
+    .btn-coffee:hover { background: rgba(245, 200, 66, 0.18); border-color: #f5c842; }
 
     .divider { height: 1px; background: var(--border); margin: 0; }
 
@@ -668,7 +653,10 @@
       </div>
     </div>
 
-    <div class="privacy-badge">ON-DEVICE</div>
+    <div class="header-note">
+      <span>no servers · no tracking · open source</span>
+      <button class="btn-learn" id="btnLearn">learn more</button>
+    </div>
   </div>
 
   <!-- PAGE INFO STRIP -->
@@ -750,10 +738,7 @@
   <div class="output" id="output">
     <div class="output-header">
       <span class="output-label" id="outputLabel">SUMMARY</span>
-      <div style="display:flex;gap:6px;">
-        <button class="btn-print" id="btnPrint">print / pdf</button>
-        <button class="btn-copy" id="btnCopy">copy</button>
-      </div>
+      <button class="btn-copy" id="btnCopy">copy</button>
     </div>
     <div class="summary-box" id="summaryBox"></div>
   </div>
@@ -762,7 +747,6 @@
 
   <!-- FOOTER -->
   <div class="footer">
-    <span class="footer-note">no servers · no tracking · open source · <button class="btn-learn" id="btnLearn">learn more</button></span>
     <a class="btn-coffee" href="https://buymeacoffee.com/jtysonwilliams" target="_blank" id="coffeeBtn">
       ☕ buy me a coffee
     </a>

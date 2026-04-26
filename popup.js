@@ -17,7 +17,6 @@ const els = {
   errorBox:      $('errorBox'),
   errorText:     $('errorText'),
   btnCopy:       $('btnCopy'),
-  btnPrint:      $('btnPrint'),
   summaryType:   $('summaryType'),
   summaryLength:   $('summaryLength'),
   summaryLanguage: $('summaryLanguage'),
@@ -65,7 +64,6 @@ async function init() {
 
   els.btnSummarize.addEventListener('click', runSummary);
   els.btnCopy.addEventListener('click', copyText);
-  els.btnPrint.addEventListener('click', printRecipe);
 
   // When format changes, save it and toggle recipe mode UI
   els.summaryType.addEventListener('change', () => {
@@ -127,7 +125,7 @@ async function runSummary() {
         throw new Error("No recipe found on this page. Make sure you're on a recipe article.");
       }
 
-      displayRecipe(result);
+      openRecipeTab(result);
       setLoading(false);
     } catch (err) {
       setLoading(false);
@@ -301,75 +299,42 @@ function extractRecipeFromPage() {
   return { title, ingredients, instructions, prepTime: null, cookTime: null, totalTime: null, servings: null };
 }
 
-// ── RECIPE DISPLAY ────────────────────────────────────────────────────────────
-function displayRecipe(recipe) {
-
-  // Build plain-text version for the copy button
-  const lines = [`📋 ${recipe.title}`];
+// ── RECIPE TAB ────────────────────────────────────────────────────────────────
+function openRecipeTab(recipe) {
   const meta = [];
-  if (recipe.totalTime) meta.push(`Total: ${recipe.totalTime}`);
+  if (recipe.totalTime) meta.push(`⏱ Total: ${recipe.totalTime}`);
   if (recipe.prepTime)  meta.push(`Prep: ${recipe.prepTime}`);
   if (recipe.cookTime)  meta.push(`Cook: ${recipe.cookTime}`);
-  if (recipe.servings)  meta.push(`Serves: ${recipe.servings}`);
-  if (meta.length) lines.push(meta.join('  ·  '));
-  lines.push('', 'INGREDIENTS');
-  recipe.ingredients.forEach(i => lines.push(`• ${i}`));
-  lines.push('', 'INSTRUCTIONS');
-  recipe.instructions.forEach((s, i) => lines.push(`${i + 1}. ${s}`));
-  lastSummaryText = lines.join('\n');
+  if (recipe.servings)  meta.push(`🍽 Serves ${recipe.servings}`);
 
-  els.outputLabel.textContent = '🍳 RECIPE';
-  els.btnPrint.classList.add('visible');
-  els.summaryBox.innerHTML = '';
+  const ingredientRows = recipe.ingredients.map(i => `<li>${i}</li>`).join('');
+  const instructionRows = recipe.instructions.map(s => `<li>${s}</li>`).join('');
 
-  // ── Meta row (time + servings) ──
-  const metaParts = [];
-  if (recipe.totalTime) metaParts.push(`⏱ ${recipe.totalTime}`);
-  if (recipe.prepTime && recipe.cookTime) metaParts.push(`prep ${recipe.prepTime} · cook ${recipe.cookTime}`);
-  if (recipe.servings)  metaParts.push(`🍽 Serves ${recipe.servings}`);
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+  <title>${recipe.title}</title>
+  <style>
+    @page { size: portrait; margin: 20mm; }
+    body { font-family: Georgia, serif; max-width: 620px; margin: 40px auto; color: #1a1a1a; line-height: 1.6; }
+    h1 { font-size: 26px; margin: 0 0 6px; }
+    .meta { color: #666; font-size: 13px; margin-bottom: 28px; font-family: monospace; }
+    h2 { font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: #555;
+         border-bottom: 1px solid #ddd; padding-bottom: 5px; margin: 28px 0 14px; }
+    ul { list-style: disc; padding-left: 20px; margin: 0; }
+    ul li { margin-bottom: 5px; font-size: 14px; }
+    ol { padding-left: 20px; margin: 0; }
+    ol li { margin-bottom: 12px; font-size: 14px; }
+    @media print { body { margin: 0; } }
+  </style></head><body>
+  <h1>${recipe.title}</h1>
+  ${meta.length ? `<p class="meta">${meta.join('&nbsp;&nbsp;·&nbsp;&nbsp;')}</p>` : ''}
+  ${ingredientRows ? `<h2>Ingredients</h2><ul>${ingredientRows}</ul>` : ''}
+  ${instructionRows ? `<h2>Instructions</h2><ol>${instructionRows}</ol>` : ''}
+  </body></html>`;
 
-  if (metaParts.length) {
-    const metaEl = document.createElement('p');
-    metaEl.className = 'recipe-meta';
-    metaEl.textContent = metaParts.join('   ');
-    els.summaryBox.appendChild(metaEl);
-  }
-
-  // ── Ingredients ──
-  if (recipe.ingredients.length) {
-    const h1 = document.createElement('p');
-    h1.className = 'recipe-heading';
-    h1.textContent = 'Ingredients';
-    els.summaryBox.appendChild(h1);
-
-    const ul = document.createElement('ul');
-    ul.className = 'recipe-ingredients';
-    recipe.ingredients.forEach(ing => {
-      const li = document.createElement('li');
-      li.textContent = ing;
-      ul.appendChild(li);
-    });
-    els.summaryBox.appendChild(ul);
-  }
-
-  // ── Instructions ──
-  if (recipe.instructions.length) {
-    const h2 = document.createElement('p');
-    h2.className = 'recipe-heading';
-    h2.textContent = 'Instructions';
-    els.summaryBox.appendChild(h2);
-
-    const ol = document.createElement('ol');
-    ol.className = 'recipe-steps';
-    recipe.instructions.forEach(step => {
-      const li = document.createElement('li');
-      li.textContent = step;
-      ol.appendChild(li);
-    });
-    els.summaryBox.appendChild(ol);
-  }
-
-  els.output.classList.add('visible');
+  const blob = new Blob([html], { type: 'text/html' });
+  const url = URL.createObjectURL(blob);
+  const win = window.open(url, '_blank');
+  win.addEventListener('load', () => URL.revokeObjectURL(url));
 }
 
 // ── PAGE CONTENT EXTRACTOR (injected into the page) ───────────────────────────
@@ -418,7 +383,6 @@ function displaySummary(text, type) {
   }[type] || 'SUMMARY';
 
   els.outputLabel.textContent = label;
-  els.btnPrint.classList.remove('visible');
 
   if (type === 'key-points') {
     const lines = text
@@ -452,35 +416,6 @@ function renderParagraphs(text) {
     p.textContent = line.trim();
     els.summaryBox.appendChild(p);
   });
-}
-
-// ── PRINT / PDF ───────────────────────────────────────────────────────────────
-function printRecipe() {
-  if (!lastSummaryText) return;
-  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Recipe</title><style>
-    body { font-family: Georgia, serif; max-width: 600px; margin: 40px auto; color: #1a1a1a; line-height: 1.6; }
-    h1 { font-size: 24px; margin-bottom: 6px; }
-    .meta { color: #666; font-size: 13px; margin-bottom: 24px; }
-    h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 1px; color: #555; border-bottom: 1px solid #ddd; padding-bottom: 4px; margin: 24px 0 12px; }
-    ul { list-style: disc; padding-left: 20px; }
-    ul li { margin-bottom: 4px; font-size: 14px; }
-    ol { padding-left: 20px; }
-    ol li { margin-bottom: 10px; font-size: 14px; }
-    @page { size: portrait; margin: 20mm; }
-    @media print { body { margin: 0; } }
-  </style></head><body>
-  ${els.summaryBox.innerHTML
-    .replace(/class="recipe-heading"/g, 'style="font-size:13px;text-transform:uppercase;letter-spacing:1px;color:#555;border-bottom:1px solid #ddd;padding-bottom:4px;margin:24px 0 12px;"')
-    .replace(/class="recipe-meta"/g, 'style="color:#666;font-size:13px;margin-bottom:24px;"')
-    .replace(/class="recipe-ingredients"/g, 'style="list-style:disc;padding-left:20px;"')
-    .replace(/class="recipe-steps"/g, 'style="padding-left:20px;"')
-    .replace(/<li>/g, '<li style="margin-bottom:8px;font-size:14px;">')}
-  </body></html>`;
-
-  const blob = new Blob([html], { type: 'text/html' });
-  const url = URL.createObjectURL(blob);
-  const win = window.open(url, '_blank');
-  win.addEventListener('load', () => { win.print(); URL.revokeObjectURL(url); });
 }
 
 // ── COPY TO CLIPBOARD ─────────────────────────────────────────────────────────
