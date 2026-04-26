@@ -313,28 +313,46 @@ function openRecipeTab(recipe) {
   if (recipe.cookTime)  meta.push(`Cook: ${recipe.cookTime}`);
   if (recipe.servings)  meta.push(`🍽 Serves ${recipe.servings}`);
 
-  const ingredientRows = recipe.ingredients.map(i => `<li>${i}</li>`).join('');
-  const instructionRows = recipe.instructions.map(s => `<li>${s}</li>`).join('');
+  const ingredientRows = recipe.ingredients
+    .map(i => `<li><span class="cb"></span><span>${i}</span></li>`)
+    .join('');
+  const instructionRows = recipe.instructions
+    .map(s => `<li>${s}</li>`)
+    .join('');
 
   const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
   <title>${recipe.title}</title>
   <style>
-    @page { size: portrait; margin: 20mm; }
-    body { font-family: Georgia, serif; max-width: 620px; margin: 40px auto; color: #1a1a1a; line-height: 1.6; }
-    h1 { font-size: 26px; margin: 0 0 6px; }
-    .meta { color: #666; font-size: 13px; margin-bottom: 28px; font-family: monospace; }
-    h2 { font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: #555;
-         border-bottom: 1px solid #ddd; padding-bottom: 5px; margin: 28px 0 14px; }
-    ul { list-style: disc; padding-left: 20px; margin: 0; }
-    ul li { margin-bottom: 5px; font-size: 14px; }
-    ol { padding-left: 20px; margin: 0; }
-    ol li { margin-bottom: 12px; font-size: 14px; }
-    @media print { body { margin: 0; } }
+    @page { size: portrait; margin: 18mm 18mm 18mm 18mm; }
+    *, *::before, *::after { box-sizing: border-box; }
+    body { font-family: Georgia, serif; color: #1a1a1a; line-height: 1.6; margin: 0; }
+    h1 { font-size: 24px; margin: 0 0 6px; }
+    .meta { color: #666; font-size: 12px; margin-bottom: 24px; font-family: monospace; letter-spacing: 0.3px; }
+    h2 { font-size: 10px; text-transform: uppercase; letter-spacing: 2px; color: #888;
+         border-bottom: 1px solid #ddd; padding-bottom: 5px; margin: 0 0 14px; }
+    .columns { display: grid; grid-template-columns: 2fr 3fr; gap: 32px; align-items: start; }
+    /* Ingredients — checkbox list */
+    .ingredients { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 9px; }
+    .ingredients li { display: flex; align-items: flex-start; gap: 9px; font-size: 13px; line-height: 1.5; }
+    .cb {
+      flex-shrink: 0;
+      width: 13px; height: 13px;
+      border: 1.5px solid #aaa;
+      border-radius: 2px;
+      margin-top: 2px;
+      display: inline-block;
+    }
+    /* Instructions — numbered list */
+    .instructions { padding-left: 20px; margin: 0; display: flex; flex-direction: column; gap: 12px; }
+    .instructions li { font-size: 13px; line-height: 1.65; padding-left: 4px; }
+    @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
   </style></head><body>
   <h1>${recipe.title}</h1>
-  ${meta.length ? `<p class="meta">${meta.join('&nbsp;&nbsp;·&nbsp;&nbsp;')}</p>` : ''}
-  ${ingredientRows ? `<h2>Ingredients</h2><ul>${ingredientRows}</ul>` : ''}
-  ${instructionRows ? `<h2>Instructions</h2><ol>${instructionRows}</ol>` : ''}
+  ${meta.length ? `<p class="meta">${meta.join('&nbsp;&nbsp;&nbsp;·&nbsp;&nbsp;&nbsp;')}</p>` : ''}
+  <div class="columns">
+    ${ingredientRows ? `<div><h2>Ingredients</h2><ul class="ingredients">${ingredientRows}</ul></div>` : '<div></div>'}
+    ${instructionRows ? `<div><h2>Instructions</h2><ol class="instructions">${instructionRows}</ol></div>` : '<div></div>'}
+  </div>
   </body></html>`;
 
   const blob = new Blob([html], { type: 'text/html' });
