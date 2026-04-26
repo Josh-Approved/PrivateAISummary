@@ -1,23 +1,23 @@
-// popup.js — THE BRAIN OF THE EXTENSION
+// popup.js
 
 const $ = id => document.getElementById(id);
 
 const els = {
-  pageInfo:      $('pageInfo'),
-  pageTitle:     $('pageTitle'),
-  pageTypeBadge: $('pageTypeBadge'),
-  unsupported:   $('unsupported'),
-  controls:      $('controls'),
-  btnSummarize:  $('btnSummarize'),
-  loading:       $('loading'),
-  loadingText:   $('loadingText'),
-  output:        $('output'),
-  outputLabel:   $('outputLabel'),
-  summaryBox:    $('summaryBox'),
-  errorBox:      $('errorBox'),
-  errorText:     $('errorText'),
-  btnCopy:       $('btnCopy'),
-  summaryType:   $('summaryType'),
+  pageInfo:        $('pageInfo'),
+  pageTitle:       $('pageTitle'),
+  pageTypeBadge:   $('pageTypeBadge'),
+  unsupported:     $('unsupported'),
+  controls:        $('controls'),
+  btnSummarize:    $('btnSummarize'),
+  loading:         $('loading'),
+  loadingText:     $('loadingText'),
+  output:          $('output'),
+  outputLabel:     $('outputLabel'),
+  summaryBox:      $('summaryBox'),
+  errorBox:        $('errorBox'),
+  errorText:       $('errorText'),
+  btnCopy:         $('btnCopy'),
+  summaryType:     $('summaryType'),
   summaryLength:   $('summaryLength'),
   summaryLanguage: $('summaryLanguage'),
   lengthWrap:      $('lengthWrap'),
@@ -25,27 +25,31 @@ const els = {
 
 let lastSummaryText = '';
 
-// ── INITIALIZATION ────────────────────────────────────────────────────────────
+// INITIALIZATION
 async function init() {
   const supported = await checkSupportAsync();
 
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  if (tab?.title) els.pageTitle.textContent = tab.title;
+  if (tab && tab.title) els.pageTitle.textContent = tab.title;
 
-  const isYouTube = tab?.url?.includes('youtube.com/watch') || tab?.url?.includes('youtu.be/');
+  const isYouTube = tab && tab.url && (tab.url.includes('youtube.com/watch') || tab.url.includes('youtu.be/'));
   if (isYouTube) {
     els.pageTypeBadge.textContent = 'YOUTUBE';
     els.pageTypeBadge.className = 'page-type-badge youtube';
   }
 
-  document.getElementById('flagLink').addEventListener('click', e => {
+  document.getElementById('flagLink').addEventListener('click', function(e) {
     e.preventDefault();
     chrome.tabs.create({ url: 'chrome://flags/#optimization-guide-on-device-model' });
   });
 
   const overlay = document.getElementById('aboutOverlay');
-  document.getElementById('btnLearn').addEventListener('click', () => overlay.classList.add('visible'));
-  document.getElementById('btnCloseAbout').addEventListener('click', () => overlay.classList.remove('visible'));
+  document.getElementById('btnLearn').addEventListener('click', function() {
+    overlay.classList.add('visible');
+  });
+  document.getElementById('btnCloseAbout').addEventListener('click', function() {
+    overlay.classList.remove('visible');
+  });
 
   if (!supported) {
     els.controls.style.display = 'none';
@@ -53,58 +57,158 @@ async function init() {
     return;
   }
 
-  // Restore saved settings
   const saved = await chrome.storage.local.get(['summaryType', 'summaryLength', 'summaryLanguage']);
   if (saved.summaryType)     els.summaryType.value     = saved.summaryType;
   if (saved.summaryLength)   els.summaryLength.value   = saved.summaryLength;
   if (saved.summaryLanguage) els.summaryLanguage.value = saved.summaryLanguage;
 
-  // Apply recipe UI state on load if it was the last saved setting
-  applyRecipeMode(saved.summaryType === 'recipe');
+  applyFormatUI(saved.summaryType || 'key-points');
 
   els.btnSummarize.addEventListener('click', runSummary);
   els.btnCopy.addEventListener('click', copyText);
 
-  // When format changes, save it and toggle recipe mode UI
-  els.summaryType.addEventListener('change', () => {
+  els.summaryType.addEventListener('change', function() {
     const val = els.summaryType.value;
     chrome.storage.local.set({ summaryType: val });
-    applyRecipeMode(val === 'recipe');
+    applyFormatUI(val);
   });
 
-  els.summaryLength.addEventListener('change', () =>
-    chrome.storage.local.set({ summaryLength: els.summaryLength.value }));
+  els.summaryLength.addEventListener('change', function() {
+    chrome.storage.local.set({ summaryLength: els.summaryLength.value });
+  });
 
-  els.summaryLanguage.addEventListener('change', () =>
-    chrome.storage.local.set({ summaryLanguage: els.summaryLanguage.value }));
+  els.summaryLanguage.addEventListener('change', function() {
+    chrome.storage.local.set({ summaryLanguage: els.summaryLanguage.value });
+  });
 }
 
-// Shows/hides the Length dropdown and updates button label for recipe mode
-function applyRecipeMode(isRecipe) {
-  els.lengthWrap.style.display = isRecipe ? 'none' : '';
-  els.btnSummarize.querySelector('span').textContent = isRecipe ? 'Extract Recipe' : 'Summarize this page';
+function applyFormatUI(format) {
+  const hideLength = format === 'recipe' || format === 'news-critique';
+  els.lengthWrap.style.display = hideLength ? 'none' : '';
+  const span = els.btnSummarize.querySelector('span');
+  if (format === 'recipe') {
+    span.textContent = 'Extract Recipe';
+  } else if (format === 'news-critique') {
+    span.textContent = 'Critique this article';
+  } else {
+    span.textContent = 'Summarize this page';
+  }
 }
 
-// ── SUPPORT CHECK ─────────────────────────────────────────────────────────────
+// SUPPORT CHECK
 async function checkSupportAsync() {
   if (!('Summarizer' in self)) return false;
   try {
     const avail = await Summarizer.availability({ outputLanguage: 'en' });
     return avail !== 'unavailable';
-  } catch {
+  } catch (e) {
     return false;
   }
 }
 
-// ── MAIN WORKFLOW ─────────────────────────────────────────────────────────────
+// MAIN WORKFLOW
 async function runSummary() {
   setLoading(true);
   hideError();
+  hideSetup();
   hideOutput();
 
   const type = els.summaryType.value;
 
-  // ── RECIPE MODE — no AI needed ────────────────────────────────────────────
+  // NEWS CRITIQUE MODE
+  if (type === 'news-critique') {
+    try {
+      setLoadingText('EXTRACTING CONTENT');
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+
+      let extracted;
+      try {
+        const res = await chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          func: extractContentFromPage,
+        });
+        extracted = res[0] && res[0].result;
+      } catch (e) {
+        throw new Error("Couldn't access this page.");
+      }
+
+      if (!extracted || !extracted.content || extracted.content.trim().length < 100) {
+        throw new Error("Not enough readable text found on this page.");
+      }
+
+      var lm = null;
+      try {
+        if (self.ai && self.ai.languageModel) lm = self.ai.languageModel;
+        else if (self.LanguageModel) lm = self.LanguageModel;
+      } catch (e) {}
+
+      if (!lm) {
+        setLoading(false);
+        showSetup(
+          'To use this feature, you must turn on an exploratory Google Chrome feature. Click below, then restart Chrome.',
+          'Enable Prompt API for Gemini Nano',
+          'chrome://flags'
+        );
+        return;
+      }
+
+      setLoadingText('LOADING ON-DEVICE MODEL');
+      var availability;
+      try {
+        availability = await lm.availability();
+      } catch (e) {
+        availability = 'unavailable';
+      }
+
+      if (availability === 'unavailable' || availability === 'no') {
+        setLoading(false);
+        showSetup(
+          'The on-device AI model isn\'t ready yet. This sometimes takes a few minutes after enabling the Chrome feature. Try closing and reopening Chrome, then try again.',
+          'Open Chrome flags →',
+          'chrome://flags'
+        );
+        return;
+      }
+
+      var session;
+      if (availability === 'downloadable') {
+        setLoadingText('DOWNLOADING MODEL (ONCE)');
+        session = await lm.create({
+          monitor: function(m) {
+            m.addEventListener('downloadprogress', function(e) {
+              var pct = Math.round((e.loaded || 0) * 100);
+              setLoadingText('DOWNLOADING MODEL ' + pct + '%');
+            });
+          }
+        });
+      } else {
+        session = await lm.create();
+      }
+
+      setLoadingText('ANALYZING ARTICLE');
+
+      const prompt = 'You are a critical news analyst. Analyze the article below and respond with exactly these five sections using these exact headers:\n\n'
+        + 'KEY POINTS:\n3-5 bullet points of the main claims and facts.\n\n'
+        + "WHAT'S MISSING:\nWhat important context, perspectives, or information does the article omit?\n\n"
+        + 'TONE CHECK:\nIs the language neutral, emotional, alarming, or persuasive? Give a specific example from the article.\n\n'
+        + 'WHO BENEFITS:\nWhose interests does this story serve? Whose agenda might it advance?\n\n'
+        + 'QUESTIONS TO ASK:\n3-4 questions a skeptical reader should investigate further.\n\n'
+        + 'Article title: ' + extracted.title + '\n\n'
+        + extracted.content;
+
+      const result = await session.prompt(prompt);
+      session.destroy();
+
+      displayNewsCritique(result);
+      setLoading(false);
+    } catch (err) {
+      setLoading(false);
+      showError(err.message || 'Could not analyze article.');
+    }
+    return;
+  }
+
+  // RECIPE MODE
   if (type === 'recipe') {
     try {
       setLoadingText('FINDING RECIPE');
@@ -112,11 +216,11 @@ async function runSummary() {
 
       let result;
       try {
-        [result] = await chrome.scripting.executeScript({
+        const res = await chrome.scripting.executeScript({
           target: { tabId: tab.id },
           func: extractRecipeFromPage,
         });
-        result = result?.result;
+        result = res[0] && res[0].result;
       } catch (e) {
         throw new Error("Couldn't access this page.");
       }
@@ -134,35 +238,36 @@ async function runSummary() {
     return;
   }
 
-  // ── SUMMARIZE MODE ────────────────────────────────────────────────────────
+  // SUMMARIZE MODE
   try {
     setLoadingText('EXTRACTING CONTENT');
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
     let extracted;
     try {
-      [extracted] = await chrome.scripting.executeScript({
+      const res = await chrome.scripting.executeScript({
         target: { tabId: tab.id },
         func: extractContentFromPage,
       });
-      extracted = extracted?.result;
+      extracted = res[0] && res[0].result;
     } catch (e) {
       throw new Error("Couldn't access this page. Try a regular article or YouTube video.");
     }
 
-    if (!extracted?.content || extracted.content.trim().length < 100) {
+    if (!extracted || !extracted.content || extracted.content.trim().length < 100) {
       throw new Error("Not enough readable text found on this page. Try navigating to a full article.");
     }
 
     setLoadingText('LOADING ON-DEVICE MODEL');
     const availability = await Summarizer.availability();
     const length = els.summaryLength.value;
+    const lang = els.summaryLanguage.value;
 
     const options = {
-      type,
-      length,
+      type: type,
+      length: length,
       format: 'plain-text',
-      outputLanguage: els.summaryLanguage.value,
+      outputLanguage: lang,
       sharedContext: extracted.type === 'youtube'
         ? 'This is a YouTube video transcript.'
         : 'This is a web article or webpage.',
@@ -171,22 +276,21 @@ async function runSummary() {
     let summarizer;
     if (availability === 'downloadable') {
       setLoadingText('DOWNLOADING MODEL (ONCE)');
-      summarizer = await Summarizer.create({
-        ...options,
-        monitor(m) {
-          m.addEventListener('downloadprogress', e => {
+      summarizer = await Summarizer.create(Object.assign({}, options, {
+        monitor: function(m) {
+          m.addEventListener('downloadprogress', function(e) {
             const pct = Math.round((e.loaded || 0) * 100);
-            setLoadingText(`DOWNLOADING MODEL ${pct}%`);
+            setLoadingText('DOWNLOADING MODEL ' + pct + '%');
           });
         }
-      });
+      }));
     } else {
       summarizer = await Summarizer.create(options);
     }
 
     setLoadingText('SUMMARIZING ON-DEVICE');
     const summary = await summarizer.summarize(extracted.content, {
-      context: `Title: ${extracted.title}`
+      context: 'Title: ' + extracted.title
     });
     summarizer.destroy();
 
@@ -199,55 +303,52 @@ async function runSummary() {
   }
 }
 
-// ── RECIPE EXTRACTOR (injected into the page) ─────────────────────────────────
-// Self-contained — cannot reference anything else in this file.
+// RECIPE EXTRACTOR (injected into the page)
 function extractRecipeFromPage() {
 
-  // STRATEGY 1: JSON-LD structured data (used by most major recipe sites)
   const scripts = document.querySelectorAll('script[type="application/ld+json"]');
-  for (const script of scripts) {
+  for (let si = 0; si < scripts.length; si++) {
     try {
-      let data = JSON.parse(script.textContent);
+      let data = JSON.parse(scripts[si].textContent);
 
-      const isRecipeType = t => t === 'Recipe' || (Array.isArray(t) && t.includes('Recipe'));
+      function isRecipeType(t) {
+        return t === 'Recipe' || (Array.isArray(t) && t.includes('Recipe'));
+      }
 
-      // Handle arrays and @graph wrappers
-      if (Array.isArray(data)) data = data.find(d => isRecipeType(d['@type'])) || data[0];
-      if (data?.['@graph']) data = data['@graph'].find(d => isRecipeType(d['@type'])) || data;
+      if (Array.isArray(data)) {
+        data = data.find(function(d) { return isRecipeType(d['@type']); }) || data[0];
+      }
+      if (data && data['@graph']) {
+        data = data['@graph'].find(function(d) { return isRecipeType(d['@type']); }) || data;
+      }
 
-      if (!isRecipeType(data?.['@type'])) continue;
+      if (!isRecipeType(data && data['@type'])) continue;
 
       const title = data.name || document.title;
 
-      // Ingredients are a flat array of strings
       const ingredients = (data.recipeIngredient || [])
-        .map(i => i.trim())
+        .map(function(i) { return i.trim(); })
         .filter(Boolean);
 
-      // Instructions can be strings or HowToStep objects
-      const instructions = (data.recipeInstructions || []).map(step => {
+      const instructions = (data.recipeInstructions || []).map(function(step) {
         if (typeof step === 'string') return step.replace(/<[^>]+>/g, '').trim();
-        // HowToSection — recurse into its itemListElement
         if (step['@type'] === 'HowToSection' && step.itemListElement) {
-          return step.itemListElement.map(s => (s.text || s.name || '').trim()).join(' ');
+          return step.itemListElement.map(function(s) { return (s.text || s.name || '').trim(); }).join(' ');
         }
         return (step.text || step.name || '').replace(/<[^>]+>/g, '').trim();
       }).filter(Boolean);
 
-      // Optional metadata
-      const parseDuration = val => {
+      function parseDuration(val) {
         if (!val) return null;
         if (typeof val !== 'string') return null;
-        // Already human-readable (e.g. "30 mins", "1 hour 15 minutes")
-        if (!val.startsWith('P')) return val.trim() || null;
-        // ISO 8601 duration (e.g. "PT1H30M")
-        const h = (val.match(/(\d+)H/) || [])[1];
-        const m = (val.match(/(\d+)M/) || [])[1];
+        if (val.charAt(0) !== 'P') return val.trim() || null;
+        const hMatch = val.match(/(\d+)H/);
+        const mMatch = val.match(/(\d+)M/);
         const parts = [];
-        if (h) parts.push(`${h} hr`);
-        if (m) parts.push(`${m} min`);
+        if (hMatch) parts.push(hMatch[1] + ' hr');
+        if (mMatch) parts.push(mMatch[1] + ' min');
         return parts.join(' ') || null;
-      };
+      }
 
       const prepTime  = parseDuration(data.prepTime);
       const cookTime  = parseDuration(data.cookTime);
@@ -257,126 +358,138 @@ function extractRecipeFromPage() {
         : null;
 
       const authorRaw = data.author;
-      const author = !authorRaw ? null
-        : typeof authorRaw === 'string' ? authorRaw
-        : Array.isArray(authorRaw) ? authorRaw.map(a => a.name || a).filter(Boolean).join(', ')
-        : authorRaw.name || null;
+      let author = null;
+      if (authorRaw) {
+        if (typeof authorRaw === 'string') {
+          author = authorRaw;
+        } else if (Array.isArray(authorRaw)) {
+          author = authorRaw.map(function(a) { return a.name || a; }).filter(Boolean).join(', ');
+        } else {
+          author = authorRaw.name || null;
+        }
+      }
 
-      const siteName = document.querySelector('meta[property="og:site_name"]')?.content
-        || document.querySelector('meta[name="application-name"]')?.content
-        || null;
+      const siteEl = document.querySelector('meta[property="og:site_name"]') ||
+                     document.querySelector('meta[name="application-name"]');
+      const siteName = siteEl ? siteEl.content : null;
 
       if (ingredients.length || instructions.length) {
-        return { title, ingredients, instructions, prepTime, cookTime, totalTime, servings, author, siteName, url: window.location.href };
+        return { title: title, ingredients: ingredients, instructions: instructions,
+                 prepTime: prepTime, cookTime: cookTime, totalTime: totalTime,
+                 servings: servings, author: author, siteName: siteName, url: window.location.href };
       }
 
     } catch (e) { continue; }
   }
 
-  // STRATEGY 2: DOM pattern matching (fallback for sites without structured data)
+  // DOM fallback
   const title = document.title;
   let ingredients = [];
   let instructions = [];
 
-  const ingredientSelectors = [
-    '[class*="ingredient" i]',
-    '[itemprop="recipeIngredient"]',
-    '[data-ingredient]',
-  ];
-
-  for (const sel of ingredientSelectors) {
-    const found = document.querySelectorAll(sel);
+  const ingredientSelectors = ['[class*="ingredient" i]', '[itemprop="recipeIngredient"]', '[data-ingredient]'];
+  for (let i = 0; i < ingredientSelectors.length; i++) {
+    const found = document.querySelectorAll(ingredientSelectors[i]);
     if (found.length > 2) {
       const items = Array.from(found)
-        .map(el => el.textContent.trim())
-        .filter(t => t.length > 2 && t.length < 300);
+        .map(function(el) { return el.textContent.trim(); })
+        .filter(function(t) { return t.length > 2 && t.length < 300; });
       if (items.length) { ingredients = items; break; }
     }
   }
 
   const instructionSelectors = [
-    '[class*="instruction" i]',
-    '[class*="direction" i]',
-    '[class*="step" i] p',
-    '[itemprop="recipeInstructions"]',
-    '[class*="method" i]',
+    '[class*="instruction" i]', '[class*="direction" i]',
+    '[class*="step" i] p', '[itemprop="recipeInstructions"]', '[class*="method" i]',
   ];
-
-  for (const sel of instructionSelectors) {
-    const found = document.querySelectorAll(sel);
+  for (let i = 0; i < instructionSelectors.length; i++) {
+    const found = document.querySelectorAll(instructionSelectors[i]);
     if (found.length > 1) {
       const items = Array.from(found)
-        .map(el => el.textContent.trim())
-        .filter(t => t.length > 15);
+        .map(function(el) { return el.textContent.trim(); })
+        .filter(function(t) { return t.length > 15; });
       if (items.length) { instructions = items; break; }
     }
   }
 
-  const siteName = document.querySelector('meta[property="og:site_name"]')?.content
-    || document.querySelector('meta[name="application-name"]')?.content
-    || null;
-  return { title, ingredients, instructions, prepTime: null, cookTime: null, totalTime: null, servings: null, author: null, siteName, url: window.location.href };
+  const siteEl = document.querySelector('meta[property="og:site_name"]') ||
+                 document.querySelector('meta[name="application-name"]');
+  const siteName = siteEl ? siteEl.content : null;
+
+  return { title: title, ingredients: ingredients, instructions: instructions,
+           prepTime: null, cookTime: null, totalTime: null, servings: null,
+           author: null, siteName: siteName, url: window.location.href };
 }
 
-// ── RECIPE TAB ────────────────────────────────────────────────────────────────
+// RECIPE TAB
 function openRecipeTab(recipe) {
   const meta = [];
-  if (recipe.totalTime) meta.push(`⏱ Total: ${recipe.totalTime}`);
-  if (recipe.prepTime)  meta.push(`Prep: ${recipe.prepTime}`);
-  if (recipe.cookTime)  meta.push(`Cook: ${recipe.cookTime}`);
-  if (recipe.servings)  meta.push(`🍽 Serves ${recipe.servings}`);
+  if (recipe.totalTime) meta.push('⏱ Total: ' + recipe.totalTime);
+  if (recipe.prepTime)  meta.push('Prep: ' + recipe.prepTime);
+  if (recipe.cookTime)  meta.push('Cook: ' + recipe.cookTime);
+  if (recipe.servings)  meta.push('🍽 Serves ' + recipe.servings);
 
-  const ingredientRows = recipe.ingredients
-    .map(i => `<li><span class="cb"></span><span>${i}</span></li>`)
-    .join('');
-  const instructionRows = recipe.instructions
-    .map(s => `<li>${s}</li>`)
-    .join('');
+  const ingredientRows = recipe.ingredients.map(function(i) {
+    return '<li><span class="cb"></span><span>' + i + '</span></li>';
+  }).join('');
 
-  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
-  <title>${recipe.title}</title>
-  <style>
-    @page { size: letter portrait; margin: 20mm; }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: Georgia, serif; color: #1a1a1a; line-height: 1.6; padding: 32px 40px; max-width: 860px; margin: 0 auto; }
-    @media print { body { padding: 0; max-width: none; margin: 0; } }
-    .header { text-align: center; margin-bottom: 28px; }
-    h1 { font-size: 26px; margin-bottom: 10px; }
-    .meta { color: #666; font-size: 12px; font-family: monospace; letter-spacing: 0.3px; }
-    .meta span { display: inline-block; margin: 0 10px; }
-    .source { font-size: 10px; color: #999; font-family: monospace; margin-top: 8px; }
-    .source a { color: #999; text-decoration: none; }
-    .source a:hover { text-decoration: underline; }
-    .divider { border: none; border-top: 1px solid #ddd; margin-bottom: 24px; }
-    .columns { display: grid; grid-template-columns: 2fr 3fr; gap: 32px; align-items: start; }
-    h2 { font-size: 10px; text-transform: uppercase; letter-spacing: 2px; color: #888;
-         border-bottom: 1px solid #ddd; padding-bottom: 5px; margin-bottom: 14px; }
-    .ingredients { list-style: none; display: flex; flex-direction: column; gap: 9px; }
-    .ingredients li { display: flex; align-items: flex-start; gap: 9px; font-size: 13px; line-height: 1.5; }
-    .cb { flex-shrink: 0; width: 13px; height: 13px; border: 1.5px solid #aaa;
-          border-radius: 2px; margin-top: 2px; display: inline-block; }
-    .instructions { list-style: decimal; padding-left: 18px; display: flex; flex-direction: column; gap: 12px; }
-    .instructions li { font-size: 13px; line-height: 1.65; }
-  </style></head><body>
-  <div class="header">
-    <h1>${recipe.title}</h1>
-    ${meta.length ? `<p class="meta">${meta.map(m => `<span>${m}</span>`).join('')}</p>` : ''}
-  ${recipe.url ? `<p class="source">${[recipe.siteName, recipe.author ? `By ${recipe.author}` : null, `<a href="${recipe.url}">${recipe.url}</a>`].filter(Boolean).join('&nbsp;&nbsp;·&nbsp;&nbsp;')}</p>` : ''}
-  </div>
-  <hr class="divider">
-  <div class="columns">
-    ${ingredientRows ? `<div><h2>Ingredients</h2><ul class="ingredients">${ingredientRows}</ul></div>` : '<div></div>'}
-    ${instructionRows ? `<div><h2>Instructions</h2><ol class="instructions">${instructionRows}</ol></div>` : '<div></div>'}
-  </div>
-  </body></html>`;
+  const instructionRows = recipe.instructions.map(function(s) {
+    return '<li>' + s + '</li>';
+  }).join('');
+
+  const sourceparts = [];
+  if (recipe.siteName) sourceparts.push(recipe.siteName);
+  if (recipe.author)   sourceparts.push('By ' + recipe.author);
+  if (recipe.url)      sourceparts.push('<a href="' + recipe.url + '">' + recipe.url + '</a>');
+  const sourceLine = sourceparts.length
+    ? '<p class="source">' + sourceparts.join('&nbsp;&nbsp;&middot;&nbsp;&nbsp;') + '</p>'
+    : '';
+
+  const metaLine = meta.length
+    ? '<p class="meta">' + meta.map(function(m) { return '<span>' + m + '</span>'; }).join('') + '</p>'
+    : '';
+
+  const html = '<!DOCTYPE html><html><head><meta charset="UTF-8">'
+    + '<title>' + recipe.title + '</title>'
+    + '<style>'
+    + '@page { size: letter portrait; margin: 20mm; }'
+    + '* { box-sizing: border-box; margin: 0; padding: 0; }'
+    + 'body { font-family: Georgia, serif; color: #1a1a1a; line-height: 1.6; padding: 32px 40px; max-width: 860px; margin: 0 auto; }'
+    + '@media print { body { padding: 0; max-width: none; margin: 0; } }'
+    + '.header { text-align: center; margin-bottom: 28px; }'
+    + 'h1 { font-size: 26px; margin-bottom: 10px; }'
+    + '.meta { color: #666; font-size: 12px; font-family: monospace; letter-spacing: 0.3px; }'
+    + '.meta span { display: inline-block; margin: 0 10px; }'
+    + '.source { font-size: 10px; color: #999; font-family: monospace; margin-top: 8px; }'
+    + '.source a { color: #999; text-decoration: none; }'
+    + '.divider { border: none; border-top: 1px solid #ddd; margin-bottom: 24px; }'
+    + '.columns { display: grid; grid-template-columns: 2fr 3fr; gap: 32px; align-items: start; }'
+    + 'h2 { font-size: 10px; text-transform: uppercase; letter-spacing: 2px; color: #888; border-bottom: 1px solid #ddd; padding-bottom: 5px; margin-bottom: 14px; }'
+    + '.ingredients { list-style: none; display: flex; flex-direction: column; gap: 9px; }'
+    + '.ingredients li { display: flex; align-items: flex-start; gap: 9px; font-size: 13px; line-height: 1.5; }'
+    + '.cb { flex-shrink: 0; width: 13px; height: 13px; border: 1.5px solid #aaa; border-radius: 2px; margin-top: 2px; display: inline-block; }'
+    + '.instructions { list-style: decimal; padding-left: 18px; display: flex; flex-direction: column; gap: 12px; }'
+    + '.instructions li { font-size: 13px; line-height: 1.65; }'
+    + '</style></head><body>'
+    + '<div class="header">'
+    + '<h1>' + recipe.title + '</h1>'
+    + metaLine
+    + sourceLine
+    + '</div>'
+    + '<hr class="divider">'
+    + '<div class="columns">'
+    + (ingredientRows ? '<div><h2>Ingredients</h2><ul class="ingredients">' + ingredientRows + '</ul></div>' : '<div></div>')
+    + (instructionRows ? '<div><h2>Instructions</h2><ol class="instructions">' + instructionRows + '</ol></div>' : '<div></div>')
+    + '</div>'
+    + '</body></html>';
 
   const blob = new Blob([html], { type: 'text/html' });
   const url = URL.createObjectURL(blob);
   const win = window.open(url, '_blank');
-  win.addEventListener('load', () => URL.revokeObjectURL(url));
+  win.addEventListener('load', function() { URL.revokeObjectURL(url); });
 }
 
-// ── PAGE CONTENT EXTRACTOR (injected into the page) ───────────────────────────
+// PAGE CONTENT EXTRACTOR (injected into the page)
 function extractContentFromPage() {
   const url = window.location.href;
   const isYouTube = url.includes('youtube.com/watch') || url.includes('youtu.be/');
@@ -386,52 +499,130 @@ function extractContentFromPage() {
       'ytd-transcript-segment-renderer .segment-text, .ytd-transcript-segment-renderer'
     );
     if (segments.length > 0) {
-      const text = Array.from(segments).map(s => s.textContent?.trim()).filter(Boolean).join(' ');
-      return { type: 'youtube', title: document.title.replace(' - YouTube', ''), content: text.slice(0, 15000), url };
+      const text = Array.from(segments).map(function(s) {
+        return s.textContent ? s.textContent.trim() : '';
+      }).filter(Boolean).join(' ');
+      return { type: 'youtube', title: document.title.replace(' - YouTube', ''), content: text.slice(0, 15000), url: url };
     }
-    const desc = document.querySelector('#description-inline-expander, #description, ytd-text-inline-expander')?.textContent || '';
-    return { type: 'youtube', title: document.title.replace(' - YouTube', ''), content: desc.slice(0, 8000), url };
+    const descEl = document.querySelector('#description-inline-expander, #description, ytd-text-inline-expander');
+    const desc = descEl ? descEl.textContent : '';
+    return { type: 'youtube', title: document.title.replace(' - YouTube', ''), content: desc.slice(0, 8000), url: url };
   }
 
   const selectors = ['article', 'main', '[role="main"]', '.post-content', '.article-body', '.entry-content', '#content', '#main-content'];
   let el = null;
-  for (const sel of selectors) {
-    const found = document.querySelector(sel);
+  for (let i = 0; i < selectors.length; i++) {
+    const found = document.querySelector(selectors[i]);
     if (found && found.textContent.trim().length > 200) { el = found; break; }
   }
   if (!el) el = document.body;
 
   const clone = el.cloneNode(true);
-  ['nav','header','footer','aside','script','style','noscript','.ad','.ads','.sidebar','.comments','.share','.social','.cookie','.popup','.modal','.newsletter','[aria-hidden="true"]'].forEach(sel => {
-    try { clone.querySelectorAll(sel).forEach(n => n.remove()); } catch {}
+  const noisy = ['nav','header','footer','aside','script','style','noscript','.ad','.ads','.sidebar','.comments','.share','.social','.cookie','.popup','.modal','.newsletter','[aria-hidden="true"]'];
+  noisy.forEach(function(sel) {
+    try { clone.querySelectorAll(sel).forEach(function(n) { n.remove(); }); } catch (e) {}
   });
 
   const text = (clone.innerText || clone.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 15000);
-  return { type: 'article', title: document.title, content: text, url };
+  return { type: 'article', title: document.title, content: text, url: url };
 }
 
-// ── SUMMARY DISPLAY ───────────────────────────────────────────────────────────
+// NEWS CRITIQUE DISPLAY
+function displayNewsCritique(rawText) {
+  lastSummaryText = rawText;
+
+  var sectionDefs = [
+    { key: 'KEY POINTS',       label: 'Key Points' },
+    { key: "WHAT'S MISSING",   label: "What's Missing" },
+    { key: 'TONE CHECK',       label: 'Tone Check' },
+    { key: 'WHO BENEFITS',     label: 'Who Benefits' },
+    { key: 'QUESTIONS TO ASK', label: 'Questions to Ask' },
+  ];
+
+  var sections = [];
+  for (var i = 0; i < sectionDefs.length; i++) {
+    var key = sectionDefs[i].key;
+    var label = sectionDefs[i].label;
+    var nextKey = sectionDefs[i + 1] ? sectionDefs[i + 1].key : null;
+
+    var startIdx = rawText.toUpperCase().indexOf(key);
+    if (startIdx === -1) continue;
+
+    var afterHeader = rawText.slice(startIdx + key.length).replace(/^[:\s]+/, '');
+    var content;
+    if (nextKey) {
+      var endIdx = afterHeader.toUpperCase().indexOf(nextKey);
+      content = endIdx === -1 ? afterHeader.trim() : afterHeader.slice(0, endIdx).trim();
+    } else {
+      content = afterHeader.trim();
+    }
+
+    if (content) sections.push({ label: label, text: content });
+  }
+
+  if (!sections.length) {
+    sections = [{ label: 'Analysis', text: rawText }];
+  }
+
+  els.outputLabel.textContent = 'NEWS CRITIQUE';
+  els.summaryBox.innerHTML = '';
+
+  for (var j = 0; j < sections.length; j++) {
+    var sLabel = sections[j].label;
+    var sText = sections[j].text;
+    if (!sText || !sText.trim()) continue;
+
+    var heading = document.createElement('p');
+    heading.className = 'critique-label';
+    heading.textContent = sLabel;
+    els.summaryBox.appendChild(heading);
+
+    var lines = sText.split('\n').map(function(l) {
+      return l.replace(/^[-*•\d.]+\s*/, '').trim();
+    }).filter(function(l) {
+      return l.length > 3;
+    });
+
+    if (lines.length > 1) {
+      var ul = document.createElement('ul');
+      for (var k = 0; k < lines.length; k++) {
+        var li = document.createElement('li');
+        li.textContent = lines[k];
+        ul.appendChild(li);
+      }
+      els.summaryBox.appendChild(ul);
+    } else {
+      var p = document.createElement('p');
+      p.textContent = sText.trim();
+      els.summaryBox.appendChild(p);
+    }
+  }
+
+  els.output.classList.add('visible');
+}
+
+// SUMMARY DISPLAY
 function displaySummary(text, type) {
   lastSummaryText = text;
 
-  const label = {
+  const labels = {
     'key-points': 'KEY POINTS',
     'tldr':       'TL;DR',
     'teaser':     'TEASER',
     'headline':   'HEADLINE'
-  }[type] || 'SUMMARY';
-
-  els.outputLabel.textContent = label;
+  };
+  els.outputLabel.textContent = labels[type] || 'SUMMARY';
 
   if (type === 'key-points') {
-    const lines = text
-      .split('\n')
-      .map(l => l.replace(/^[-•*·]\s*/, '').trim())
-      .filter(l => l.length > 5);
+    const lines = text.split('\n').map(function(l) {
+      return l.replace(/^[-*]\s*/, '').trim();
+    }).filter(function(l) {
+      return l.length > 5;
+    });
 
     if (lines.length > 1) {
       const ul = document.createElement('ul');
-      lines.forEach(line => {
+      lines.forEach(function(line) {
         const li = document.createElement('li');
         li.textContent = line;
         ul.appendChild(li);
@@ -450,26 +641,26 @@ function displaySummary(text, type) {
 
 function renderParagraphs(text) {
   els.summaryBox.innerHTML = '';
-  text.split('\n').filter(l => l.trim()).forEach(line => {
+  text.split('\n').filter(function(l) { return l.trim(); }).forEach(function(line) {
     const p = document.createElement('p');
     p.textContent = line.trim();
     els.summaryBox.appendChild(p);
   });
 }
 
-// ── COPY TO CLIPBOARD ─────────────────────────────────────────────────────────
+// COPY TO CLIPBOARD
 async function copyText() {
   if (!lastSummaryText) return;
   await navigator.clipboard.writeText(lastSummaryText);
   els.btnCopy.textContent = 'copied!';
   els.btnCopy.classList.add('copied');
-  setTimeout(() => {
+  setTimeout(function() {
     els.btnCopy.textContent = 'copy';
     els.btnCopy.classList.remove('copied');
   }, 2000);
 }
 
-// ── UI HELPERS ────────────────────────────────────────────────────────────────
+// UI HELPERS
 function setLoading(on) {
   els.loading.classList.toggle('visible', on);
   els.controls.style.opacity       = on ? '0.4' : '1';
@@ -480,5 +671,15 @@ function setLoadingText(t) { els.loadingText.textContent = t; }
 function showError(msg)     { els.errorText.textContent = msg; els.errorBox.classList.add('visible'); }
 function hideError()        { els.errorBox.classList.remove('visible'); }
 function hideOutput()       { els.output.classList.remove('visible'); }
+
+function showSetup(message, buttonLabel, flagUrl) {
+  document.getElementById('setupText').textContent = message;
+  var btn = document.getElementById('btnSetupAction');
+  btn.textContent = buttonLabel;
+  btn.onclick = function() { chrome.tabs.create({ url: flagUrl }); };
+  document.getElementById('setupBox').classList.add('visible');
+}
+
+function hideSetup() { document.getElementById('setupBox').classList.remove('visible'); }
 
 init();
