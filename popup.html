@@ -31,6 +31,7 @@
       font-size: 14px;
       line-height: 1.5;
       overflow-x: hidden;
+      position: relative;
     }
 
     .header {
@@ -377,10 +378,13 @@
     }
 
     .recipe-steps li {
+      display: list-item;
       font-size: 13px;
       line-height: 1.6;
       color: var(--text);
     }
+
+    .recipe-steps li::before { content: none; }
 
     .loading {
       display: none;
@@ -510,6 +514,122 @@
     .btn-coffee:hover { border-color: #f5c842; color: #f5c842; }
 
     .divider { height: 1px; background: var(--border); margin: 0; }
+
+    .btn-learn {
+      background: none;
+      border: none;
+      padding: 0;
+      color: var(--muted);
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.3px;
+      cursor: pointer;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+      transition: color 0.15s;
+    }
+
+    .btn-learn:hover { color: var(--accent); }
+
+    /* ── About overlay ── */
+    .about-overlay {
+      display: none;
+      position: absolute;
+      inset: 0;
+      background: var(--bg);
+      flex-direction: column;
+      z-index: 100;
+    }
+
+    .about-overlay.visible { display: flex; }
+
+    .about-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 16px 12px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .about-title {
+      font-family: 'DM Serif Display', serif;
+      font-size: 17px;
+      color: var(--text);
+    }
+
+    .btn-close {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--muted);
+      font-size: 14px;
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.15s;
+      line-height: 1;
+    }
+
+    .btn-close:hover { border-color: var(--text); color: var(--text); }
+
+    .about-body {
+      padding: 16px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      flex: 1;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border) transparent;
+    }
+
+    .about-section {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .about-section-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+
+    .about-section p {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.65;
+    }
+
+    .about-checks {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .about-checks li {
+      display: flex;
+      gap: 9px;
+      font-size: 13px;
+      color: var(--text);
+      line-height: 1.5;
+    }
+
+    .about-checks li::before {
+      content: '✓';
+      color: var(--accent);
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
   </style>
 </head>
 <body>
@@ -628,10 +748,47 @@
 
   <!-- FOOTER -->
   <div class="footer">
-    <span class="footer-note">no servers · no tracking · open source</span>
+    <span class="footer-note">no servers · no tracking · open source · <button class="btn-learn" id="btnLearn">learn more</button></span>
     <a class="btn-coffee" href="https://buymeacoffee.com/jtysonwilliams" target="_blank" id="coffeeBtn">
       ☕ buy me a coffee
     </a>
+  </div>
+
+  <!-- ABOUT OVERLAY -->
+  <div class="about-overlay" id="aboutOverlay">
+    <div class="about-header">
+      <span class="about-title">How it works</span>
+      <button class="btn-close" id="btnCloseAbout">✕</button>
+    </div>
+    <div class="about-body">
+
+      <div class="about-section">
+        <span class="about-section-label">100% on-device</span>
+        <p>This extension uses Chrome's built-in Gemini Nano model, which runs entirely on your computer. When you click Summarize, your page content is processed locally — it never leaves your browser.</p>
+      </div>
+
+      <div class="about-section">
+        <span class="about-section-label">What that means for you</span>
+        <ul class="about-checks">
+          <li>No account or sign-in required</li>
+          <li>Works fully offline after the first model download</li>
+          <li>Your content is never sent to any server</li>
+          <li>No usage data, analytics, or tracking of any kind</li>
+          <li>Free forever — no subscription, no paywall</li>
+        </ul>
+      </div>
+
+      <div class="about-section">
+        <span class="about-section-label">How the model gets there</span>
+        <p>Chrome downloads Gemini Nano once in the background and stores it on your device. After that, all summarization happens locally using your CPU or GPU — completely private and offline.</p>
+      </div>
+
+      <div class="about-section">
+        <span class="about-section-label">Open source</span>
+        <p>This extension is open source. You can inspect every line of code to verify nothing is hidden.</p>
+      </div>
+
+    </div>
   </div>
 
   <script src="popup.js"></script>

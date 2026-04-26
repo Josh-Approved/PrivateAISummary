@@ -43,6 +43,10 @@ async function init() {
     chrome.tabs.create({ url: 'chrome://flags/#optimization-guide-on-device-model' });
   });
 
+  const overlay = document.getElementById('aboutOverlay');
+  document.getElementById('btnLearn').addEventListener('click', () => overlay.classList.add('visible'));
+  document.getElementById('btnCloseAbout').addEventListener('click', () => overlay.classList.remove('visible'));
+
   if (!supported) {
     els.controls.style.display = 'none';
     els.unsupported.classList.add('visible');
