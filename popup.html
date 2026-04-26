@@ -265,11 +265,11 @@
       color: var(--muted);
     }
 
-    .btn-copy {
+    .btn-copy, .btn-print {
       background: none;
-      border: 1px solid var(--border);
+      border: 1px solid #4a4a58;
       border-radius: 6px;
-      color: var(--muted);
+      color: #a0a0b4;
       font-family: 'DM Mono', monospace;
       font-size: 10px;
       padding: 3px 8px;
@@ -278,8 +278,10 @@
       letter-spacing: 0.3px;
     }
 
-    .btn-copy:hover { border-color: var(--accent); color: var(--accent); }
+    .btn-copy:hover, .btn-print:hover { border-color: var(--accent); color: var(--accent); }
     .btn-copy.copied { color: var(--accent); border-color: var(--accent); }
+    .btn-print { display: none; }
+    .btn-print.visible { display: block; }
 
     .summary-box {
       background: var(--surface);
@@ -630,6 +632,15 @@
       flex-shrink: 0;
       margin-top: 1px;
     }
+
+    .about-link {
+      color: var(--accent);
+      text-decoration: none;
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+    }
+
+    .about-link:hover { text-decoration: underline; }
   </style>
 </head>
 <body>
@@ -739,7 +750,10 @@
   <div class="output" id="output">
     <div class="output-header">
       <span class="output-label" id="outputLabel">SUMMARY</span>
-      <button class="btn-copy" id="btnCopy">copy</button>
+      <div style="display:flex;gap:6px;">
+        <button class="btn-print" id="btnPrint">print / pdf</button>
+        <button class="btn-copy" id="btnCopy">copy</button>
+      </div>
     </div>
     <div class="summary-box" id="summaryBox"></div>
   </div>
@@ -785,7 +799,7 @@
 
       <div class="about-section">
         <span class="about-section-label">Open source</span>
-        <p>This extension is open source. You can inspect every line of code to verify nothing is hidden.</p>
+        <p>This extension is open source. You can inspect every line of code to verify nothing is hidden. <a href="https://github.com/jtysonwilliams/PrivateAISummary" target="_blank" class="about-link">View on GitHub →</a></p>
       </div>
 
     </div>
