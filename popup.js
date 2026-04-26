@@ -466,7 +466,8 @@ function printRecipe() {
     ul li { margin-bottom: 4px; font-size: 14px; }
     ol { padding-left: 20px; }
     ol li { margin-bottom: 10px; font-size: 14px; }
-    @media print { body { margin: 20px; } }
+    @page { size: portrait; margin: 20mm; }
+    @media print { body { margin: 0; } }
   </style></head><body>
   ${els.summaryBox.innerHTML
     .replace(/class="recipe-heading"/g, 'style="font-size:13px;text-transform:uppercase;letter-spacing:1px;color:#555;border-bottom:1px solid #ddd;padding-bottom:4px;margin:24px 0 12px;"')
