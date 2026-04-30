@@ -303,6 +303,20 @@
       margin-top: 1px;
     }
 
+    /* ── Streaming raw text ── */
+    .streaming-raw {
+      white-space: pre-wrap;
+      font-size: 13px;
+      line-height: 1.6;
+      color: var(--muted);
+    }
+    .streaming-raw::after {
+      content: '▍';
+      display: inline-block;
+      animation: blink 0.8s step-end infinite;
+    }
+    @keyframes blink { 50% { opacity: 0; } }
+
     /* ── News critique styles ── */
     .critique-label {
       font-size: 9px;

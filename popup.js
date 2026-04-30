@@ -196,11 +196,24 @@ async function runSummary() {
         + 'Article title: ' + extracted.title + '\n\n'
         + extracted.content;
 
-      const result = await session.prompt(prompt);
-      session.destroy();
+      let streamedText = '';
+      let streamingStarted = false;
+      const stream = session.promptStreaming(prompt);
 
-      displayNewsCritique(result);
-      setLoading(false);
+      for await (const chunk of stream) {
+        streamedText = chunk; // Chrome sends cumulative text per chunk
+        if (!streamingStarted) {
+          streamingStarted = true;
+          setLoading(false);
+          els.outputLabel.textContent = 'NEWS CRITIQUE';
+          els.summaryBox.innerHTML = '<div class="streaming-raw" id="streamingRaw"></div>';
+          els.output.classList.add('visible');
+        }
+        document.getElementById('streamingRaw').textContent = streamedText;
+      }
+
+      session.destroy();
+      displayNewsCritique(streamedText);
     } catch (err) {
       setLoading(false);
       showError(err.message || 'Could not analyze article.');
