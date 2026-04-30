@@ -197,19 +197,34 @@ async function runSummary() {
         + extracted.content;
 
       let streamedText = '';
+      let prevChunk = '';
       let streamingStarted = false;
+      let rafPending = false;
+      let streamingEl = null;
       const stream = session.promptStreaming(prompt);
 
       for await (const chunk of stream) {
-        streamedText = chunk; // Chrome sends cumulative text per chunk
+        // Handle both cumulative and incremental chunk styles across Chrome versions
+        const delta = chunk.startsWith(prevChunk) ? chunk.slice(prevChunk.length) : chunk;
+        streamedText += delta;
+        prevChunk = chunk;
+
         if (!streamingStarted) {
           streamingStarted = true;
           setLoading(false);
           els.outputLabel.textContent = 'NEWS CRITIQUE';
           els.summaryBox.innerHTML = '<div class="streaming-raw" id="streamingRaw"></div>';
+          streamingEl = document.getElementById('streamingRaw');
           els.output.classList.add('visible');
         }
-        document.getElementById('streamingRaw').textContent = streamedText;
+
+        if (!rafPending) {
+          rafPending = true;
+          requestAnimationFrame(function() {
+            if (streamingEl) streamingEl.textContent = streamedText;
+            rafPending = false;
+          });
+        }
       }
 
       session.destroy();
