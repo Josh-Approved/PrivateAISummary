@@ -190,7 +190,6 @@ async function runSummary() {
       const prompt = 'You are a media literacy analyst. Analyze the article below and respond with ONLY these five labeled sections. Do not add any text before the first section or after the last section.\n\n'
         + 'KEY POINTS:\nList 3-5 bullet points of the main facts and claims. Include specific names, numbers, and direct claims from the article. Do not editorialize. Start each bullet with *.\n\n'
         + "WHAT'S MISSING:\nList 2-4 specific gaps — name a missing statistic, an absent source or perspective, an unaddressed counterargument, or omitted context that would change how a reader understands this story. Every bullet must be specific to this article. Do not write vague observations like \"more context would be helpful.\" Start each bullet with *.\n\n"
-        + 'TONE CHECK:\nPick exactly ONE tone from the list below that best matches the article\'s language and framing:\n\nNEUTRAL — Balanced language, no loaded framing, both sides represented fairly.\nPERSUASIVE — Selective framing or leading language that steers the reader toward a conclusion.\nEMOTIONAL — Charged or dramatic language designed to trigger sympathy, outrage, or fear.\nALARMING — Emphasizes threats, danger, or crisis to create urgency.\n\nWrite the tone word alone on its own line first. On the next line, quote a specific word or phrase directly from the article and explain in one sentence why it demonstrates this tone.\n\n'
         + 'WHO BENEFITS:\nName 2-4 specific people, organizations, or groups who benefit from this story being framed this way. For each, write one sentence explaining what they gain. Do not use vague categories like "politicians" or "the media."\n\n'
         + 'QUESTIONS TO ASK:\nWrite 3-4 questions a skeptical reader should investigate. Each question must be specific to a claim or gap in this article — not generic media literacy questions. Start each bullet with *.\n\n'
         + 'Article title: ' + extracted.title + '\n\n'
@@ -562,7 +561,6 @@ function displayNewsCritique(rawText) {
   var sectionDefs = [
     { key: 'KEY POINTS',       label: 'Key Points' },
     { key: "WHAT'S MISSING",   label: "What's Missing" },
-    { key: 'TONE CHECK',       label: 'Tone Check' },
     { key: 'WHO BENEFITS',     label: 'Who Benefits' },
     { key: 'QUESTIONS TO ASK', label: 'Questions to Ask' },
   ];
@@ -615,40 +613,6 @@ function displayNewsCritique(rawText) {
     }).filter(function(l) {
       return l.length > 3;
     });
-
-    // Special rendering for Tone Check
-    if (sLabel === 'Tone Check') {
-      var toneOptions = ['neutral', 'emotional', 'persuasive', 'alarming'];
-      var firstWord = sText.trim().split(/\s+/)[0].toLowerCase().replace(/[^a-z]/g, '');
-      var detected = toneOptions.indexOf(firstWord) !== -1 ? firstWord : null;
-
-      if (!detected) {
-        var lower = sText.toLowerCase();
-        for (var ti = 0; ti < toneOptions.length; ti++) {
-          if (lower.indexOf(toneOptions[ti]) !== -1) { detected = toneOptions[ti]; break; }
-        }
-      }
-
-      var pillRow = document.createElement('div');
-      pillRow.className = 'tone-pills';
-      var toneLabels = ['Neutral', 'Emotional', 'Persuasive', 'Alarming'];
-      toneLabels.forEach(function(tLabel) {
-        var pill = document.createElement('span');
-        pill.className = 'tone-pill';
-        if (detected === tLabel.toLowerCase()) pill.className += ' active-' + tLabel.toLowerCase();
-        pill.textContent = tLabel;
-        pillRow.appendChild(pill);
-      });
-      els.summaryBox.appendChild(pillRow);
-
-      var explanationLines = (detected && firstWord === detected) ? lines.slice(1) : lines;
-      if (explanationLines.length > 0) {
-        var tp = document.createElement('p');
-        tp.textContent = explanationLines.join(' ');
-        els.summaryBox.appendChild(tp);
-      }
-      continue;
-    }
 
     if (lines.length > 1) {
       var ul = document.createElement('ul');
