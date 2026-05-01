@@ -18,9 +18,7 @@ const els = {
   errorText:       $('errorText'),
   btnCopy:         $('btnCopy'),
   summaryType:     $('summaryType'),
-  summaryLength:   $('summaryLength'),
   summaryLanguage: $('summaryLanguage'),
-  lengthWrap:      $('lengthWrap'),
 };
 
 let lastSummaryText = '';
@@ -57,9 +55,8 @@ async function init() {
     return;
   }
 
-  const saved = await chrome.storage.local.get(['summaryType', 'summaryLength', 'summaryLanguage']);
+  const saved = await chrome.storage.local.get(['summaryType', 'summaryLanguage']);
   if (saved.summaryType)     els.summaryType.value     = saved.summaryType;
-  if (saved.summaryLength)   els.summaryLength.value   = saved.summaryLength;
   if (saved.summaryLanguage) els.summaryLanguage.value = saved.summaryLanguage;
 
   applyFormatUI(saved.summaryType || 'key-points');
@@ -73,18 +70,12 @@ async function init() {
     applyFormatUI(val);
   });
 
-  els.summaryLength.addEventListener('change', function() {
-    chrome.storage.local.set({ summaryLength: els.summaryLength.value });
-  });
-
   els.summaryLanguage.addEventListener('change', function() {
     chrome.storage.local.set({ summaryLanguage: els.summaryLanguage.value });
   });
 }
 
 function applyFormatUI(format) {
-  const hideLength = format === 'recipe' || format === 'news-critique';
-  els.lengthWrap.style.display = hideLength ? 'none' : '';
   const span = els.btnSummarize.querySelector('span');
   if (format === 'recipe') {
     span.textContent = 'Extract Recipe';
@@ -287,12 +278,11 @@ async function runSummary() {
 
     setLoadingText('LOADING ON-DEVICE MODEL');
     const availability = await Summarizer.availability();
-    const length = els.summaryLength.value;
     const lang = els.summaryLanguage.value;
 
     const options = {
       type: type,
-      length: length,
+      length: 'medium',
       format: 'plain-text',
       outputLanguage: lang,
       sharedContext: extracted.type === 'youtube'
@@ -316,12 +306,41 @@ async function runSummary() {
     }
 
     setLoadingText('SUMMARIZING ON-DEVICE');
-    const summary = await summarizer.summarize(extracted.content, {
+
+    let streamedText = '';
+    let prevChunk = '';
+    let streamingStarted = false;
+    let rafPending = false;
+    let streamingEl = null;
+    const stream = summarizer.summarizeStreaming(extracted.content, {
       context: 'Title: ' + extracted.title
     });
-    summarizer.destroy();
 
-    displaySummary(summary, type);
+    for await (const chunk of stream) {
+      const delta = chunk.startsWith(prevChunk) ? chunk.slice(prevChunk.length) : chunk;
+      streamedText += delta;
+      prevChunk = chunk;
+
+      if (!streamingStarted) {
+        streamingStarted = true;
+        setLoading(false);
+        els.outputLabel.textContent = options.type === 'key-points' ? 'KEY POINTS' : 'SUMMARY';
+        els.summaryBox.innerHTML = '<div class="streaming-raw" id="streamingRaw"></div>';
+        streamingEl = document.getElementById('streamingRaw');
+        els.output.classList.add('visible');
+      }
+
+      if (!rafPending) {
+        rafPending = true;
+        requestAnimationFrame(function() {
+          if (streamingEl) streamingEl.textContent = streamedText;
+          rafPending = false;
+        });
+      }
+    }
+
+    summarizer.destroy();
+    displaySummary(streamedText, type);
     setLoading(false);
 
   } catch (err) {
