@@ -98,45 +98,6 @@
       text-align: right;
     }
 
-    .page-info {
-      padding: 10px 16px;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .page-type-badge {
-      font-family: 'DM Mono', monospace;
-      font-size: 9px;
-      letter-spacing: 1px;
-      text-transform: uppercase;
-      padding: 2px 6px;
-      border-radius: 4px;
-      flex-shrink: 0;
-    }
-
-    .page-type-badge.article {
-      background: rgba(50, 100, 210, 0.07);
-      color: #2d5cc4;
-      border: 1px solid rgba(50, 100, 210, 0.2);
-    }
-
-    .page-type-badge.youtube {
-      background: rgba(185, 40, 40, 0.07);
-      color: #b82828;
-      border: 1px solid rgba(185, 40, 40, 0.2);
-    }
-
-    .page-title {
-      font-size: 12px;
-      color: var(--muted);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      flex: 1;
-    }
-
     .controls {
       padding: 12px 16px;
       display: flex;
@@ -244,7 +205,12 @@
       color: var(--muted);
     }
 
-    .btn-copy {
+    .output-actions {
+      display: flex;
+      gap: 6px;
+    }
+
+    .btn-copy, .btn-expand {
       background: none;
       border: 1px solid #c8c8d8;
       border-radius: 6px;
@@ -257,7 +223,7 @@
       letter-spacing: 0.3px;
     }
 
-    .btn-copy:hover { border-color: var(--accent-dim); color: var(--accent-dim); }
+    .btn-copy:hover, .btn-expand:hover { border-color: var(--accent-dim); color: var(--accent-dim); }
     .btn-copy.copied { color: var(--accent-dim); border-color: var(--accent-dim); }
 
     .summary-box {
@@ -303,17 +269,12 @@
       margin-top: 1px;
     }
 
-    /* ── Streaming raw text ── */
-    .streaming-raw {
-      white-space: pre-wrap;
-      font-size: 13px;
-      line-height: 1.6;
-      color: var(--muted);
-    }
-    .streaming-raw::after {
-      content: '▍';
+    /* ── Streaming cursor ── */
+    .stream-cursor {
       display: inline-block;
+      color: var(--accent-dim);
       animation: blink 0.8s step-end infinite;
+      margin-left: 2px;
     }
     @keyframes blink { 50% { opacity: 0; } }
 
@@ -340,6 +301,30 @@
       padding: 7px 10px;
       line-height: 1.5;
       margin-bottom: 12px;
+    }
+
+    /* ── Comment styles ── */
+    .comment-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 10px 12px;
+      margin-bottom: 8px;
+    }
+
+    .comment-author {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      color: var(--muted);
+      letter-spacing: 0.3px;
+      margin-bottom: 5px;
+    }
+
+    .comment-text {
+      font-size: 13px;
+      line-height: 1.55;
+      color: var(--text);
+      font-style: italic;
     }
 
     /* ── Recipe styles ── */
@@ -725,12 +710,6 @@
     </div>
   </div>
 
-  <!-- PAGE INFO STRIP -->
-  <div class="page-info" id="pageInfo">
-    <span class="page-type-badge article" id="pageTypeBadge">ARTICLE</span>
-    <span class="page-title" id="pageTitle">Loading page info…</span>
-  </div>
-
   <!-- UNSUPPORTED STATE -->
   <div class="unsupported" id="unsupported">
     <div class="unsupported-icon">⚠️</div>
@@ -758,6 +737,7 @@
         <select id="summaryType">
           <option value="key-points">📋 Key Points</option>
           <option value="news-critique">🔍 News Critique</option>
+          <option value="youtube-summary">▶ YouTube Summary</option>
           <option value="recipe">🍳 Get Recipe</option>
         </select>
       </div>
@@ -802,7 +782,10 @@
   <div class="output" id="output">
     <div class="output-header">
       <span class="output-label" id="outputLabel">SUMMARY</span>
-      <button class="btn-copy" id="btnCopy">copy</button>
+      <div class="output-actions">
+        <button class="btn-copy" id="btnCopy">copy</button>
+        <button class="btn-expand" id="btnExpand">expand</button>
+      </div>
     </div>
     <div class="summary-box" id="summaryBox"></div>
   </div>

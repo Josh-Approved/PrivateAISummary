@@ -3,9 +3,6 @@
 const $ = id => document.getElementById(id);
 
 const els = {
-  pageInfo:        $('pageInfo'),
-  pageTitle:       $('pageTitle'),
-  pageTypeBadge:   $('pageTypeBadge'),
   unsupported:     $('unsupported'),
   controls:        $('controls'),
   btnSummarize:    $('btnSummarize'),
@@ -17,24 +14,18 @@ const els = {
   errorBox:        $('errorBox'),
   errorText:       $('errorText'),
   btnCopy:         $('btnCopy'),
+  btnExpand:       $('btnExpand'),
   summaryType:     $('summaryType'),
   summaryLanguage: $('summaryLanguage'),
 };
 
 let lastSummaryText = '';
+let lastMeta = null;
+let lastType = '';
 
 // INITIALIZATION
 async function init() {
   const supported = await checkSupportAsync();
-
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  if (tab && tab.title) els.pageTitle.textContent = tab.title;
-
-  const isYouTube = tab && tab.url && (tab.url.includes('youtube.com/watch') || tab.url.includes('youtu.be/'));
-  if (isYouTube) {
-    els.pageTypeBadge.textContent = 'YOUTUBE';
-    els.pageTypeBadge.className = 'page-type-badge youtube';
-  }
 
   document.getElementById('flagLink').addEventListener('click', function(e) {
     e.preventDefault();
@@ -63,6 +54,9 @@ async function init() {
 
   els.btnSummarize.addEventListener('click', runSummary);
   els.btnCopy.addEventListener('click', copyText);
+  els.btnExpand.addEventListener('click', function() {
+    if (lastSummaryText) openExpandTab(lastSummaryText, lastType, lastMeta);
+  });
 
   els.summaryType.addEventListener('change', function() {
     const val = els.summaryType.value;
@@ -81,6 +75,8 @@ function applyFormatUI(format) {
     span.textContent = 'Extract Recipe';
   } else if (format === 'news-critique') {
     span.textContent = 'Critique this article';
+  } else if (format === 'youtube-summary') {
+    span.textContent = 'Summarize this video';
   } else {
     span.textContent = 'Summarize this page';
   }
@@ -126,6 +122,7 @@ async function runSummary() {
       if (!extracted || !extracted.content || extracted.content.trim().length < 100) {
         throw new Error("Not enough readable text found on this page.");
       }
+      lastMeta = extracted;
 
       var lm = null;
       try {
@@ -190,7 +187,6 @@ async function runSummary() {
       let prevChunk = '';
       let streamingStarted = false;
       let rafPending = false;
-      let streamingEl = null;
       const stream = session.promptStreaming(prompt);
 
       for await (const chunk of stream) {
@@ -203,15 +199,13 @@ async function runSummary() {
           streamingStarted = true;
           setLoading(false);
           els.outputLabel.textContent = 'NEWS CRITIQUE';
-          els.summaryBox.innerHTML = '<div class="streaming-raw" id="streamingRaw"></div>';
-          streamingEl = document.getElementById('streamingRaw');
           els.output.classList.add('visible');
         }
 
         if (!rafPending) {
           rafPending = true;
           requestAnimationFrame(function() {
-            if (streamingEl) streamingEl.textContent = streamedText;
+            renderNewsCritiqueStreaming(streamedText);
             rafPending = false;
           });
         }
@@ -256,6 +250,103 @@ async function runSummary() {
     return;
   }
 
+  // YOUTUBE SUMMARY MODE
+  if (type === 'youtube-summary') {
+    try {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (!tab.url || !tab.url.includes('youtube.com/watch')) {
+        throw new Error("Navigate to a YouTube video page first, then try again.");
+      }
+
+      setLoadingText('EXTRACTING TRANSCRIPT');
+      let ytResult;
+      try {
+        const res = await chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          func: extractYouTubeTranscriptFromPage,
+        });
+        ytResult = res[0] && res[0].result;
+      } catch (e) {
+        throw new Error("Couldn't access this page.");
+      }
+
+      if (!ytResult || !ytResult.content || ytResult.content.trim().length < 100) {
+        throw new Error("No transcript found. This video may not have captions available. Look for the CC icon on the video player to check.");
+      }
+      lastMeta = ytResult;
+
+      setLoadingText('LOADING ON-DEVICE MODEL');
+      const ytAvailability = await Summarizer.availability();
+      const ytLang = els.summaryLanguage.value;
+
+      const ytOptions = {
+        type: 'key-points',
+        length: 'medium',
+        format: 'plain-text',
+        outputLanguage: ytLang,
+        sharedContext: 'This is a transcript from a spoken YouTube video. The text may lack punctuation or sentence structure.',
+      };
+
+      let ytSummarizer;
+      if (ytAvailability === 'downloadable') {
+        setLoadingText('DOWNLOADING MODEL (ONCE)');
+        ytSummarizer = await Summarizer.create(Object.assign({}, ytOptions, {
+          monitor: function(m) {
+            m.addEventListener('downloadprogress', function(e) {
+              const pct = Math.round((e.loaded || 0) * 100);
+              setLoadingText('DOWNLOADING MODEL ' + pct + '%');
+            });
+          }
+        }));
+      } else {
+        ytSummarizer = await Summarizer.create(ytOptions);
+      }
+
+      setLoadingText('SUMMARIZING ON-DEVICE');
+
+      let ytStreamedText = '';
+      let ytPrevChunk = '';
+      let ytStreamingStarted = false;
+      let ytRafPending = false;
+      const ytStream = ytSummarizer.summarizeStreaming(ytResult.content, {
+        context: 'Title: ' + ytResult.title
+      });
+
+      for await (const chunk of ytStream) {
+        const delta = chunk.startsWith(ytPrevChunk) ? chunk.slice(ytPrevChunk.length) : chunk;
+        ytStreamedText += delta;
+        ytPrevChunk = chunk;
+
+        if (!ytStreamingStarted) {
+          ytStreamingStarted = true;
+          setLoading(false);
+          els.outputLabel.textContent = 'VIDEO SUMMARY';
+          els.output.classList.add('visible');
+        }
+
+        if (!ytRafPending) {
+          ytRafPending = true;
+          requestAnimationFrame(function() {
+            renderSummaryStreaming(ytStreamedText, 'youtube-summary');
+            ytRafPending = false;
+          });
+        }
+      }
+
+      ytSummarizer.destroy();
+      displaySummary(ytStreamedText, 'youtube-summary');
+      if (lastMeta && lastMeta.topComments && lastMeta.topComments.length) {
+        appendYouTubeComments(lastMeta.topComments);
+      }
+      setLoading(false);
+
+    } catch (err) {
+      setLoading(false);
+      showError(err.message || 'Could not summarize video.');
+    }
+    return;
+  }
+
   // SUMMARIZE MODE
   try {
     setLoadingText('EXTRACTING CONTENT');
@@ -269,12 +360,13 @@ async function runSummary() {
       });
       extracted = res[0] && res[0].result;
     } catch (e) {
-      throw new Error("Couldn't access this page. Try a regular article or YouTube video.");
+      throw new Error("Couldn't access this page.");
     }
 
     if (!extracted || !extracted.content || extracted.content.trim().length < 100) {
-      throw new Error("Not enough readable text found on this page. Try navigating to a full article.");
+      throw new Error("Not enough readable text found on this page.");
     }
+    lastMeta = extracted;
 
     setLoadingText('LOADING ON-DEVICE MODEL');
     const availability = await Summarizer.availability();
@@ -285,9 +377,7 @@ async function runSummary() {
       length: 'medium',
       format: 'plain-text',
       outputLanguage: lang,
-      sharedContext: extracted.type === 'youtube'
-        ? 'This is a YouTube video transcript.'
-        : 'This is a web article or webpage.',
+      sharedContext: 'This is a webpage.',
     };
 
     let summarizer;
@@ -311,7 +401,6 @@ async function runSummary() {
     let prevChunk = '';
     let streamingStarted = false;
     let rafPending = false;
-    let streamingEl = null;
     const stream = summarizer.summarizeStreaming(extracted.content, {
       context: 'Title: ' + extracted.title
     });
@@ -325,15 +414,13 @@ async function runSummary() {
         streamingStarted = true;
         setLoading(false);
         els.outputLabel.textContent = options.type === 'key-points' ? 'KEY POINTS' : 'SUMMARY';
-        els.summaryBox.innerHTML = '<div class="streaming-raw" id="streamingRaw"></div>';
-        streamingEl = document.getElementById('streamingRaw');
         els.output.classList.add('visible');
       }
 
       if (!rafPending) {
         rafPending = true;
         requestAnimationFrame(function() {
-          if (streamingEl) streamingEl.textContent = streamedText;
+          renderSummaryStreaming(streamedText, type);
           rafPending = false;
         });
       }
@@ -467,6 +554,147 @@ function extractRecipeFromPage() {
            author: null, siteName: siteName, url: window.location.href };
 }
 
+// EXPAND TAB
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function openExpandTab(text, type, meta) {
+  function fmtDate(iso) {
+    if (!iso) return null;
+    try { return new Date(iso).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }); }
+    catch (e) { return null; }
+  }
+
+  var title = (meta && meta.title) || 'Summary';
+  var url   = (meta && meta.url)   || '';
+  var isYT  = meta && meta.type === 'youtube';
+  var metaParts, dateStr;
+
+  if (isYT) {
+    var ytPub = fmtDate(meta.publishedDate) || meta.publishedDate || '';
+    dateStr   = ytPub ? 'Published ' + ytPub : '';
+    metaParts = [meta.channelName || '', meta.viewCount || '', dateStr].filter(Boolean);
+  } else {
+    var site    = (meta && meta.siteName) || '';
+    var authors = (meta && meta.authors && meta.authors.length) ? 'By ' + meta.authors.join(', ') : '';
+    var pubDate = fmtDate(meta && meta.publishedTime);
+    var modDate = fmtDate(meta && meta.modifiedTime);
+    dateStr = pubDate
+      ? 'Published ' + pubDate + (modDate && modDate !== pubDate ? ' · Updated ' + modDate : '')
+      : (modDate ? 'Updated ' + modDate : '');
+    metaParts = [site, authors, dateStr].filter(Boolean);
+  }
+
+  var contentHtml = '';
+
+  if (type === 'news-critique') {
+    var sectionDefs = [
+      { key: 'KEY POINTS',       label: 'Key Points' },
+      { key: "WHAT'S MISSING",   label: "What's Missing" },
+      { key: 'WHO BENEFITS',     label: 'Who Benefits' },
+      { key: 'QUESTIONS TO ASK', label: 'Questions to Ask' },
+    ];
+    contentHtml += '<p class="disclaimer">AI-generated analysis using a local model. Verify all facts independently.</p>';
+    for (var i = 0; i < sectionDefs.length; i++) {
+      var key     = sectionDefs[i].key;
+      var label   = sectionDefs[i].label;
+      var nextKey = sectionDefs[i + 1] ? sectionDefs[i + 1].key : null;
+      var startIdx = text.toUpperCase().indexOf(key);
+      if (startIdx === -1) continue;
+      var afterHeader = text.slice(startIdx + key.length).replace(/^[:\s]+/, '');
+      var sContent;
+      if (nextKey) {
+        var endIdx = afterHeader.toUpperCase().indexOf(nextKey);
+        sContent = endIdx === -1 ? afterHeader.trim() : afterHeader.slice(0, endIdx).trim();
+      } else {
+        sContent = afterHeader.trim();
+      }
+      if (!sContent) continue;
+      contentHtml += '<h2>' + escapeHtml(label) + '</h2>';
+      var lines = sContent.split('\n').map(function(l) {
+        return l.replace(/^[-*•\d.]+\s*/, '').trim();
+      }).filter(function(l) { return l.length > 3; });
+      if (lines.length > 1) {
+        contentHtml += '<ul>' + lines.map(function(l) { return '<li>' + escapeHtml(l) + '</li>'; }).join('') + '</ul>';
+      } else {
+        contentHtml += '<p>' + escapeHtml(sContent.trim()) + '</p>';
+      }
+    }
+  } else {
+    var kpLabel = type === 'key-points' ? 'Key Points' : type === 'youtube-summary' ? 'Video Summary' : 'Summary';
+    contentHtml += '<h2>' + kpLabel + '</h2>';
+    var kpLines = text.split('\n').map(function(l) {
+      return l.replace(/^[-*]\s*/, '').trim();
+    }).filter(function(l) { return l.length > 5; });
+    if (kpLines.length > 1) {
+      contentHtml += '<ul>' + kpLines.map(function(l) { return '<li>' + escapeHtml(l) + '</li>'; }).join('') + '</ul>';
+    } else {
+      text.split('\n').filter(function(l) { return l.trim(); }).forEach(function(line) {
+        contentHtml += '<p>' + escapeHtml(line.trim()) + '</p>';
+      });
+    }
+
+    if (type === 'youtube-summary' && meta && meta.topComments && meta.topComments.length) {
+      contentHtml += '<h2>Top Comments</h2>';
+      meta.topComments.forEach(function(comment) {
+        contentHtml += '<div class="comment-item">';
+        if (comment.author) contentHtml += '<p class="comment-author">' + escapeHtml(comment.author) + '</p>';
+        contentHtml += '<p class="comment-text">&ldquo;' + escapeHtml(comment.text) + '&rdquo;</p>';
+        contentHtml += '</div>';
+      });
+    }
+  }
+
+  var metaHtml = metaParts.length
+    ? '<p class="meta">' + escapeHtml(metaParts.join('  ·  ')) + '</p>'
+    : '';
+  var urlHtml = url
+    ? '<a class="source-url" href="' + escapeHtml(url) + '" target="_blank">View original ↗</a>'
+    : '';
+
+  var html = '<!DOCTYPE html><html><head><meta charset="UTF-8">'
+    + '<title>' + escapeHtml(title) + '</title>'
+    + '<style>'
+    + '* { box-sizing: border-box; margin: 0; padding: 0; }'
+    + 'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #17171b; background: #f8f9fb; line-height: 1.6; }'
+    + '.page { max-width: 680px; margin: 0 auto; padding: 48px 40px; }'
+    + '.badge { font-family: monospace; font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #4d7c00; margin-bottom: 24px; }'
+    + 'h1 { font-family: Georgia, "Times New Roman", serif; font-size: 28px; line-height: 1.25; margin-bottom: 14px; color: #17171b; }'
+    + '.meta { font-family: monospace; font-size: 11px; color: #6e6e7a; margin-bottom: 8px; line-height: 1.5; }'
+    + '.source-url { display: inline-block; font-family: monospace; font-size: 11px; color: #4d7c00; text-decoration: none; margin-bottom: 28px; }'
+    + '.source-url:hover { text-decoration: underline; }'
+    + '.divider { border: none; border-top: 1px solid #e0e0ea; margin-bottom: 24px; }'
+    + 'h2 { font-family: monospace; font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; color: #2d5cc4; margin-top: 28px; margin-bottom: 12px; }'
+    + 'h2:first-of-type { margin-top: 0; }'
+    + 'ul { list-style: none; display: flex; flex-direction: column; gap: 10px; }'
+    + 'li { display: flex; gap: 10px; font-size: 14px; line-height: 1.65; color: #17171b; }'
+    + 'li::before { content: "→"; color: #4d7c00; font-family: monospace; flex-shrink: 0; margin-top: 1px; }'
+    + 'p { font-size: 14px; line-height: 1.7; color: #17171b; margin-bottom: 8px; }'
+    + '.disclaimer { font-family: monospace; font-size: 10px; color: #7a5200; background: rgba(180,120,0,0.07); border: 1px solid rgba(180,120,0,0.22); border-radius: 8px; padding: 8px 12px; margin-bottom: 20px; line-height: 1.5; }'
+    + '.comment-item { background: #fff; border: 1px solid #e0e0ea; border-radius: 8px; padding: 10px 13px; margin-bottom: 8px; }'
+    + '.comment-author { font-family: monospace; font-size: 10px; color: #6e6e7a; margin-bottom: 5px; }'
+    + '.comment-text { font-size: 13.5px; line-height: 1.6; color: #17171b; font-style: italic; }'
+    + '.footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid #e0e0ea; font-family: monospace; font-size: 9px; color: #a0a0b0; letter-spacing: 0.5px; }'
+    + '@media print { body { background: white; } .page { padding: 0; } }'
+    + '</style></head><body>'
+    + '<div class="page">'
+    + '<div class="badge">Private AI Summary</div>'
+    + '<h1>' + escapeHtml(title) + '</h1>'
+    + metaHtml
+    + urlHtml
+    + '<hr class="divider">'
+    + contentHtml
+    + '<div class="footer">Generated by Private AI Summary · Runs entirely on your device · No data sent</div>'
+    + '</div></body></html>';
+
+  var blob = new Blob([html], { type: 'text/html' });
+  var blobUrl = URL.createObjectURL(blob);
+  var win = window.open(blobUrl, '_blank');
+  if (win) win.addEventListener('load', function() { URL.revokeObjectURL(blobUrl); });
+}
+
 // RECIPE TAB
 function openRecipeTab(recipe) {
   const meta = [];
@@ -538,22 +766,6 @@ function openRecipeTab(recipe) {
 // PAGE CONTENT EXTRACTOR (injected into the page)
 function extractContentFromPage() {
   const url = window.location.href;
-  const isYouTube = url.includes('youtube.com/watch') || url.includes('youtu.be/');
-
-  if (isYouTube) {
-    const segments = document.querySelectorAll(
-      'ytd-transcript-segment-renderer .segment-text, .ytd-transcript-segment-renderer'
-    );
-    if (segments.length > 0) {
-      const text = Array.from(segments).map(function(s) {
-        return s.textContent ? s.textContent.trim() : '';
-      }).filter(Boolean).join(' ');
-      return { type: 'youtube', title: document.title.replace(' - YouTube', ''), content: text.slice(0, 15000), url: url };
-    }
-    const descEl = document.querySelector('#description-inline-expander, #description, ytd-text-inline-expander');
-    const desc = descEl ? descEl.textContent : '';
-    return { type: 'youtube', title: document.title.replace(' - YouTube', ''), content: desc.slice(0, 8000), url: url };
-  }
 
   const selectors = ['article', 'main', '[role="main"]', '.post-content', '.article-body', '.entry-content', '#content', '#main-content'];
   let el = null;
@@ -570,12 +782,175 @@ function extractContentFromPage() {
   });
 
   const text = (clone.innerText || clone.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 15000);
-  return { type: 'article', title: document.title, content: text, url: url };
+
+  const siteEl = document.querySelector('meta[property="og:site_name"], meta[name="application-name"]');
+  const siteName = siteEl ? siteEl.content : null;
+
+  const authorEls = document.querySelectorAll('meta[name="author"], meta[property="article:author"]');
+  let authors = Array.from(authorEls).map(function(m) { return m.content; }).filter(Boolean);
+  if (!authors.length) {
+    const ldScripts = document.querySelectorAll('script[type="application/ld+json"]');
+    for (let s = 0; s < ldScripts.length; s++) {
+      try {
+        const d = JSON.parse(ldScripts[s].textContent);
+        const items = d['@graph'] ? d['@graph'] : (Array.isArray(d) ? d : [d]);
+        for (let t = 0; t < items.length; t++) {
+          if (items[t].author) {
+            const a = Array.isArray(items[t].author) ? items[t].author : [items[t].author];
+            authors = a.map(function(x) { return typeof x === 'string' ? x : (x && x.name); }).filter(Boolean);
+            if (authors.length) break;
+          }
+        }
+        if (authors.length) break;
+      } catch (e) {}
+    }
+  }
+
+  const pubEl = document.querySelector(
+    'meta[property="article:published_time"], meta[name="article:published_time"], ' +
+    'meta[property="datePublished"], meta[itemprop="datePublished"], meta[name="pubdate"]'
+  );
+  const modEl = document.querySelector(
+    'meta[property="article:modified_time"], meta[name="article:modified_time"], ' +
+    'meta[property="dateModified"], meta[itemprop="dateModified"]'
+  );
+  const publishedTime = pubEl ? pubEl.content : null;
+  const modifiedTime  = modEl ? modEl.content : null;
+
+  return { type: 'article', title: document.title, content: text, url: url,
+           siteName: siteName, authors: authors, publishedTime: publishedTime, modifiedTime: modifiedTime };
+}
+
+// YOUTUBE TRANSCRIPT EXTRACTOR (injected into the page)
+async function extractYouTubeTranscriptFromPage() {
+  const title = document.title.replace(/ - YouTube$/, '').trim();
+  const url = window.location.href;
+
+  function sleep(ms) { return new Promise(function(r) { setTimeout(r, ms); }); }
+
+  function readTranscriptDOM() {
+    const segs = document.querySelectorAll('ytd-transcript-segment-renderer .segment-text, ytd-transcript-segment-renderer');
+    if (segs.length < 5) return null;
+    return Array.from(segs)
+      .map(function(s) { return s.textContent ? s.textContent.trim() : ''; })
+      .filter(Boolean).join(' ').replace(/\s+/g, ' ').trim();
+  }
+
+  function collectMeta() {
+    const channelEl = document.querySelector(
+      'ytd-channel-name yt-formatted-string a, #channel-name .yt-formatted-string, #owner ytd-channel-name a'
+    );
+    const channelName = channelEl ? channelEl.textContent.trim() : null;
+
+    const viewEl = document.querySelector('.view-count, #view-count span.view-count, ytd-video-view-count-renderer span');
+    const viewCount = viewEl ? viewEl.textContent.trim() : null;
+
+    const pubMeta = document.querySelector('meta[itemprop="datePublished"]');
+    const publishedDate = pubMeta ? pubMeta.content : null;
+
+    const commentNodes = document.querySelectorAll('ytd-comment-thread-renderer');
+    const topComments = Array.from(commentNodes).slice(0, 3).map(function(node) {
+      const authorEl = node.querySelector('#author-text span');
+      const textEl   = node.querySelector('#content-text');
+      const text     = textEl ? textEl.textContent.trim() : null;
+      return text ? { author: authorEl ? authorEl.textContent.trim() : null, text: text } : null;
+    }).filter(Boolean);
+
+    return { channelName: channelName, viewCount: viewCount, publishedDate: publishedDate, topComments: topComments };
+  }
+
+  function buildResult(content) {
+    const m = collectMeta();
+    return {
+      title: title, url: url, content: content, type: 'youtube',
+      channelName: m.channelName, viewCount: m.viewCount,
+      publishedDate: m.publishedDate, topComments: m.topComments
+    };
+  }
+
+  function parseTracksAndFetch(tracks) {
+    if (!tracks || !tracks.length) return Promise.resolve(null);
+    const track = tracks.find(function(t) {
+      return t.languageCode === 'en' || (t.languageCode && t.languageCode.startsWith('en'));
+    }) || tracks[0];
+    if (!track || !track.baseUrl) return Promise.resolve(null);
+
+    return fetch(track.baseUrl + '&fmt=json3')
+      .then(function(r) { if (!r.ok) throw new Error(); return r.json(); })
+      .then(function(j) {
+        const text = (j.events || [])
+          .filter(function(e) { return e.segs; })
+          .map(function(e) { return e.segs.map(function(s) { return s.utf8 || ''; }).join(''); })
+          .join(' ').replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
+        return text.length > 100 ? text.slice(0, 15000) : null;
+      })
+      .catch(function() {
+        return fetch(track.baseUrl)
+          .then(function(r) { return r.ok ? r.text() : null; })
+          .then(function(xml) {
+            if (!xml) return null;
+            const text = xml
+              .replace(/<[^>]+>/g, ' ')
+              .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+              .replace(/&#39;/g, "'").replace(/&quot;/g, '"')
+              .replace(/\s+/g, ' ').trim();
+            return text.length > 100 ? text.slice(0, 15000) : null;
+          })
+          .catch(function() { return null; });
+      });
+  }
+
+  // ── Method 1: ytInitialPlayerResponse (player data — has caption tracks) ──
+  try {
+    const tracks = window.ytInitialPlayerResponse
+      && window.ytInitialPlayerResponse.captions
+      && window.ytInitialPlayerResponse.captions.playerCaptionsTracklistRenderer
+      && window.ytInitialPlayerResponse.captions.playerCaptionsTracklistRenderer.captionTracks;
+    const text = await parseTracksAndFetch(tracks);
+    if (text) return buildResult(text);
+  } catch (e) {}
+
+  // ── Method 2: Transcript panel already open ──
+  const existing = readTranscriptDOM();
+  if (existing && existing.length > 100) return buildResult(existing.slice(0, 15000));
+
+  // ── Method 3: Automate "Show more" → "Show transcript" → read DOM ──
+  try {
+    const expandSelectors = [
+      '#description-inline-expander #expand',
+      'ytd-text-inline-expander #expand',
+      'ytd-text-inline-expander tp-yt-paper-button',
+      '#description tp-yt-paper-button[aria-expanded="false"]',
+    ];
+    for (var i = 0; i < expandSelectors.length; i++) {
+      var btn = document.querySelector(expandSelectors[i]);
+      if (btn) { btn.click(); break; }
+    }
+    await sleep(600);
+
+    var allClickable = Array.from(document.querySelectorAll(
+      'button, tp-yt-paper-button, yt-button-shape button, ytd-button-renderer button'
+    ));
+    var transcriptBtn = allClickable.find(function(b) {
+      var txt = (b.innerText || b.textContent || '').trim().toLowerCase();
+      return txt === 'show transcript' || txt === 'transcript';
+    });
+
+    if (transcriptBtn) {
+      transcriptBtn.click();
+      await sleep(2000);
+      var domText = readTranscriptDOM();
+      if (domText && domText.length > 100) return buildResult(domText.slice(0, 15000));
+    }
+  } catch (e) {}
+
+  return buildResult(null);
 }
 
 // NEWS CRITIQUE DISPLAY
 function displayNewsCritique(rawText) {
   lastSummaryText = rawText;
+  lastType = 'news-critique';
 
   var sectionDefs = [
     { key: 'KEY POINTS',       label: 'Key Points' },
@@ -654,16 +1029,18 @@ function displayNewsCritique(rawText) {
 // SUMMARY DISPLAY
 function displaySummary(text, type) {
   lastSummaryText = text;
+  lastType = type;
 
   const labels = {
-    'key-points': 'KEY POINTS',
-    'tldr':       'TL;DR',
-    'teaser':     'TEASER',
-    'headline':   'HEADLINE'
+    'key-points':      'KEY POINTS',
+    'youtube-summary': 'VIDEO SUMMARY',
+    'tldr':            'TL;DR',
+    'teaser':          'TEASER',
+    'headline':        'HEADLINE'
   };
   els.outputLabel.textContent = labels[type] || 'SUMMARY';
 
-  if (type === 'key-points') {
+  if (type === 'key-points' || type === 'youtube-summary') {
     const lines = text.split('\n').map(function(l) {
       return l.replace(/^[-*]\s*/, '').trim();
     }).filter(function(l) {
@@ -696,6 +1073,154 @@ function renderParagraphs(text) {
     p.textContent = line.trim();
     els.summaryBox.appendChild(p);
   });
+}
+
+// YOUTUBE COMMENTS APPEND
+function appendYouTubeComments(comments) {
+  if (!comments || !comments.length) return;
+
+  var heading = document.createElement('p');
+  heading.className = 'critique-label';
+  heading.textContent = 'TOP COMMENTS';
+  els.summaryBox.appendChild(heading);
+
+  comments.forEach(function(comment) {
+    var item = document.createElement('div');
+    item.className = 'comment-item';
+
+    if (comment.author) {
+      var author = document.createElement('p');
+      author.className = 'comment-author';
+      author.textContent = comment.author;
+      item.appendChild(author);
+    }
+
+    var text = document.createElement('p');
+    text.className = 'comment-text';
+    text.textContent = '“' + comment.text + '”';
+    item.appendChild(text);
+
+    els.summaryBox.appendChild(item);
+  });
+}
+
+// STREAMING RENDER HELPERS
+
+function createCursor() {
+  const span = document.createElement('span');
+  span.className = 'stream-cursor';
+  span.textContent = '▍';
+  return span;
+}
+
+function renderSummaryStreaming(text, type) {
+  els.summaryBox.innerHTML = '';
+
+  if (type === 'key-points' || type === 'youtube-summary') {
+    const lines = text.split('\n').map(function(l) {
+      return l.replace(/^[-*]\s*/, '').trim();
+    }).filter(function(l) { return l.length > 5; });
+
+    if (lines.length > 1) {
+      const ul = document.createElement('ul');
+      lines.forEach(function(line, i) {
+        const li = document.createElement('li');
+        li.textContent = line;
+        if (i === lines.length - 1) li.appendChild(createCursor());
+        ul.appendChild(li);
+      });
+      els.summaryBox.appendChild(ul);
+      return;
+    }
+  }
+
+  const paras = text.split('\n').filter(function(l) { return l.trim(); });
+  if (paras.length) {
+    paras.forEach(function(line, i) {
+      const p = document.createElement('p');
+      p.textContent = line.trim();
+      if (i === paras.length - 1) p.appendChild(createCursor());
+      els.summaryBox.appendChild(p);
+    });
+  } else {
+    const p = document.createElement('p');
+    p.appendChild(createCursor());
+    els.summaryBox.appendChild(p);
+  }
+}
+
+function renderNewsCritiqueStreaming(text) {
+  var sectionDefs = [
+    { key: 'KEY POINTS',       label: 'Key Points' },
+    { key: "WHAT'S MISSING",   label: "What's Missing" },
+    { key: 'WHO BENEFITS',     label: 'Who Benefits' },
+    { key: 'QUESTIONS TO ASK', label: 'Questions to Ask' },
+  ];
+
+  var sections = [];
+  for (var i = 0; i < sectionDefs.length; i++) {
+    var key = sectionDefs[i].key;
+    var label = sectionDefs[i].label;
+    var nextKey = sectionDefs[i + 1] ? sectionDefs[i + 1].key : null;
+    var startIdx = text.toUpperCase().indexOf(key);
+    if (startIdx === -1) continue;
+    var afterHeader = text.slice(startIdx + key.length).replace(/^[:\s]+/, '');
+    var content;
+    if (nextKey) {
+      var endIdx = afterHeader.toUpperCase().indexOf(nextKey);
+      content = endIdx === -1 ? afterHeader.trim() : afterHeader.slice(0, endIdx).trim();
+    } else {
+      content = afterHeader.trim();
+    }
+    if (content) sections.push({ label: label, text: content });
+  }
+
+  els.summaryBox.innerHTML = '';
+
+  var disclaimer = document.createElement('p');
+  disclaimer.className = 'critique-disclaimer';
+  disclaimer.textContent = 'AI-generated analysis using a local model. Check all facts for accuracy.';
+  els.summaryBox.appendChild(disclaimer);
+
+  if (!sections.length) {
+    var p = document.createElement('p');
+    p.textContent = text.trim();
+    p.appendChild(createCursor());
+    els.summaryBox.appendChild(p);
+    return;
+  }
+
+  for (var j = 0; j < sections.length; j++) {
+    var isLast = j === sections.length - 1;
+    var sLabel = sections[j].label;
+    var sText = sections[j].text;
+    if (!sText || !sText.trim()) continue;
+
+    var heading = document.createElement('p');
+    heading.className = 'critique-label';
+    heading.textContent = sLabel;
+    els.summaryBox.appendChild(heading);
+
+    var lines = sText.split('\n').map(function(l) {
+      return l.replace(/^[-*•\d.]+\s*/, '').trim();
+    }).filter(function(l) { return l.length > 3; });
+
+    if (lines.length > 1) {
+      var ul = document.createElement('ul');
+      for (var k = 0; k < lines.length; k++) {
+        var li = document.createElement('li');
+        li.textContent = lines[k];
+        if (isLast && k === lines.length - 1) li.appendChild(createCursor());
+        ul.appendChild(li);
+      }
+      els.summaryBox.appendChild(ul);
+    } else {
+      var p = document.createElement('p');
+      p.textContent = sText.trim();
+      if (isLast) p.appendChild(createCursor());
+      els.summaryBox.appendChild(p);
+    }
+  }
 }
 
 // COPY TO CLIPBOARD
