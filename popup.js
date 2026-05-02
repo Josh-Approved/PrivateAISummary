@@ -186,7 +186,7 @@ async function runSummary() {
       let streamedText = '';
       let prevChunk = '';
       let streamingStarted = false;
-      let rafPending = false;
+      let rafId = null;
       const stream = session.promptStreaming(prompt);
 
       for await (const chunk of stream) {
@@ -202,15 +202,15 @@ async function runSummary() {
           els.output.classList.add('visible');
         }
 
-        if (!rafPending) {
-          rafPending = true;
-          requestAnimationFrame(function() {
+        if (!rafId) {
+          rafId = requestAnimationFrame(function() {
+            rafId = null;
             renderNewsCritiqueStreaming(streamedText);
-            rafPending = false;
           });
         }
       }
 
+      if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
       session.destroy();
       displayNewsCritique(streamedText);
     } catch (err) {
@@ -264,6 +264,7 @@ async function runSummary() {
         const res = await chrome.scripting.executeScript({
           target: { tabId: tab.id },
           func: extractYouTubeTranscriptFromPage,
+          world: 'MAIN',
         });
         ytResult = res[0] && res[0].result;
       } catch (e) {
@@ -307,7 +308,7 @@ async function runSummary() {
       let ytStreamedText = '';
       let ytPrevChunk = '';
       let ytStreamingStarted = false;
-      let ytRafPending = false;
+      let ytRafId = null;
       const ytStream = ytSummarizer.summarizeStreaming(ytResult.content, {
         context: 'Title: ' + ytResult.title
       });
@@ -324,15 +325,15 @@ async function runSummary() {
           els.output.classList.add('visible');
         }
 
-        if (!ytRafPending) {
-          ytRafPending = true;
-          requestAnimationFrame(function() {
+        if (!ytRafId) {
+          ytRafId = requestAnimationFrame(function() {
+            ytRafId = null;
             renderSummaryStreaming(ytStreamedText, 'youtube-summary');
-            ytRafPending = false;
           });
         }
       }
 
+      if (ytRafId) { cancelAnimationFrame(ytRafId); ytRafId = null; }
       ytSummarizer.destroy();
       displaySummary(ytStreamedText, 'youtube-summary');
       if (lastMeta && lastMeta.topComments && lastMeta.topComments.length) {
@@ -400,7 +401,7 @@ async function runSummary() {
     let streamedText = '';
     let prevChunk = '';
     let streamingStarted = false;
-    let rafPending = false;
+    let rafId = null;
     const stream = summarizer.summarizeStreaming(extracted.content, {
       context: 'Title: ' + extracted.title
     });
@@ -417,15 +418,15 @@ async function runSummary() {
         els.output.classList.add('visible');
       }
 
-      if (!rafPending) {
-        rafPending = true;
-        requestAnimationFrame(function() {
+      if (!rafId) {
+        rafId = requestAnimationFrame(function() {
+          rafId = null;
           renderSummaryStreaming(streamedText, type);
-          rafPending = false;
         });
       }
     }
 
+    if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
     summarizer.destroy();
     displaySummary(streamedText, type);
     setLoading(false);
@@ -623,6 +624,7 @@ function openExpandTab(text, type, meta) {
       }
     }
   } else {
+    contentHtml += '<p class="disclaimer">AI-generated summary using a local model. Verify important details independently.</p>';
     var kpLabel = type === 'key-points' ? 'Key Points' : type === 'youtube-summary' ? 'Video Summary' : 'Summary';
     contentHtml += '<h2>' + kpLabel + '</h2>';
     var kpLines = text.split('\n').map(function(l) {
@@ -676,8 +678,10 @@ function openExpandTab(text, type, meta) {
     + '.comment-item { background: #fff; border: 1px solid #e0e0ea; border-radius: 8px; padding: 10px 13px; margin-bottom: 8px; }'
     + '.comment-author { font-family: monospace; font-size: 10px; color: #6e6e7a; margin-bottom: 5px; }'
     + '.comment-text { font-size: 13.5px; line-height: 1.6; color: #17171b; font-style: italic; }'
-    + '.footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid #e0e0ea; font-family: monospace; font-size: 9px; color: #a0a0b0; letter-spacing: 0.5px; }'
-    + '@media print { body { background: white; } .page { padding: 0; } }'
+    + '.footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid #e0e0ea; font-family: monospace; font-size: 9px; color: #a0a0b0; letter-spacing: 0.5px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px; }'
+    + '.footer a { color: #b0b0c0; text-decoration: none; }'
+    + '.footer a:hover { color: #7a7a9a; text-decoration: underline; }'
+    + '@media print { body { background: white; } .page { padding: 0; } .footer a { display: none; } }'
     + '</style></head><body>'
     + '<div class="page">'
     + '<div class="badge">Private AI Summary</div>'
@@ -686,7 +690,7 @@ function openExpandTab(text, type, meta) {
     + urlHtml
     + '<hr class="divider">'
     + contentHtml
-    + '<div class="footer">Generated by Private AI Summary · Runs entirely on your device · No data sent</div>'
+    + '<div class="footer"><span>Private AI Summary · Runs entirely on your device · No data sent</span><a href="https://buymeacoffee.com/jtysonwilliams" target="_blank">buy me a coffee ☕</a></div>'
     + '</div></body></html>';
 
   var blob = new Blob([html], { type: 'text/html' });
@@ -729,7 +733,6 @@ function openRecipeTab(recipe) {
     + '@page { size: letter portrait; margin: 20mm; }'
     + '* { box-sizing: border-box; margin: 0; padding: 0; }'
     + 'body { font-family: Georgia, serif; color: #1a1a1a; line-height: 1.6; padding: 32px 40px; max-width: 860px; margin: 0 auto; }'
-    + '@media print { body { padding: 0; max-width: none; margin: 0; } }'
     + '.header { text-align: center; margin-bottom: 28px; }'
     + 'h1 { font-size: 26px; margin-bottom: 10px; }'
     + '.meta { color: #666; font-size: 12px; font-family: monospace; letter-spacing: 0.3px; }'
@@ -744,7 +747,13 @@ function openRecipeTab(recipe) {
     + '.cb { flex-shrink: 0; width: 13px; height: 13px; border: 1.5px solid #aaa; border-radius: 2px; margin-top: 2px; display: inline-block; }'
     + '.instructions { list-style: decimal; padding-left: 18px; display: flex; flex-direction: column; gap: 12px; }'
     + '.instructions li { font-size: 13px; line-height: 1.65; }'
+    + '.disclaimer { font-family: monospace; font-size: 10px; color: #7a5200; background: rgba(180,120,0,0.07); border: 1px solid rgba(180,120,0,0.22); border-radius: 6px; padding: 7px 10px; line-height: 1.5; margin-bottom: 20px; }'
+    + '.footer { margin-top: 40px; padding-top: 14px; border-top: 1px solid #ddd; font-family: monospace; font-size: 9px; color: #b0b0b0; letter-spacing: 0.5px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px; }'
+    + '.footer a { color: #b0b0b0; text-decoration: none; }'
+    + '.footer a:hover { color: #888; text-decoration: underline; }'
+    + '@media print { body { padding: 0; max-width: none; margin: 0; } .footer a { display: none; } }'
     + '</style></head><body>'
+    + '<p class="disclaimer">Recipe extracted from source page by Private AI Summary. Check the original for accuracy.</p>'
     + '<div class="header">'
     + '<h1>' + recipe.title + '</h1>'
     + metaLine
@@ -755,6 +764,7 @@ function openRecipeTab(recipe) {
     + (ingredientRows ? '<div><h2>Ingredients</h2><ul class="ingredients">' + ingredientRows + '</ul></div>' : '<div></div>')
     + (instructionRows ? '<div><h2>Instructions</h2><ol class="instructions">' + instructionRows + '</ol></div>' : '<div></div>')
     + '</div>'
+    + '<div class="footer"><span>Private AI Summary · Runs entirely on your device · No data sent</span><a href="https://buymeacoffee.com/jtysonwilliams" target="_blank">buy me a coffee ☕</a></div>'
     + '</body></html>';
 
   const blob = new Blob([html], { type: 'text/html' });
@@ -829,11 +839,25 @@ async function extractYouTubeTranscriptFromPage() {
   function sleep(ms) { return new Promise(function(r) { setTimeout(r, ms); }); }
 
   function readTranscriptDOM() {
-    const segs = document.querySelectorAll('ytd-transcript-segment-renderer .segment-text, ytd-transcript-segment-renderer');
-    if (segs.length < 5) return null;
-    return Array.from(segs)
+    // New UI (PAmodern_transcript_view): transcript-segment-view-model with span[role="text"]
+    // Timestamps are in aria-hidden divs and a11y label divs — span[role="text"] gives only the speech text
+    var newSegs = document.querySelectorAll('transcript-segment-view-model span[role="text"]');
+    if (newSegs.length >= 5) {
+      return Array.from(newSegs)
+        .map(function(s) { return s.textContent ? s.textContent.trim() : ''; })
+        .filter(Boolean)
+        .join(' ').replace(/\s+/g, ' ').trim();
+    }
+
+    // Old UI: ytd-transcript-segment-renderer .segment-text
+    var oldSegs = document.querySelectorAll(
+      'ytd-transcript-segment-renderer .segment-text, ytd-transcript-segment-renderer'
+    );
+    if (oldSegs.length < 5) return null;
+    return Array.from(oldSegs)
       .map(function(s) { return s.textContent ? s.textContent.trim() : ''; })
-      .filter(Boolean).join(' ').replace(/\s+/g, ' ').trim();
+      .filter(function(t) { return t && !/^\d+:\d+$/.test(t); })
+      .join(' ').replace(/\s+/g, ' ').trim();
   }
 
   function collectMeta() {
@@ -901,11 +925,29 @@ async function extractYouTubeTranscriptFromPage() {
   }
 
   // ── Method 1: ytInitialPlayerResponse (player data — has caption tracks) ──
+  // Only use if it matches the current video (SPA navigation can leave stale data)
   try {
-    const tracks = window.ytInitialPlayerResponse
-      && window.ytInitialPlayerResponse.captions
-      && window.ytInitialPlayerResponse.captions.playerCaptionsTracklistRenderer
-      && window.ytInitialPlayerResponse.captions.playerCaptionsTracklistRenderer.captionTracks;
+    const currentVideoId = new URLSearchParams(window.location.search).get('v');
+    const ipr = window.ytInitialPlayerResponse;
+    const iprVideoId = ipr && ipr.videoDetails && ipr.videoDetails.videoId;
+    if (ipr && (!currentVideoId || !iprVideoId || currentVideoId === iprVideoId)) {
+      const tracks = ipr.captions
+        && ipr.captions.playerCaptionsTracklistRenderer
+        && ipr.captions.playerCaptionsTracklistRenderer.captionTracks;
+      const text = await parseTracksAndFetch(tracks);
+      if (text) return buildResult(text);
+    }
+  } catch (e) {}
+
+  // ── Method 1b: ytplayer.config (player re-initialises on SPA nav; raw_player_response may be fresher) ──
+  try {
+    const cfg = window.ytplayer && window.ytplayer.config;
+    const raw = cfg && cfg.args && cfg.args.raw_player_response;
+    const parsed = raw ? (typeof raw === 'string' ? JSON.parse(raw) : raw) : null;
+    const tracks = parsed
+      && parsed.captions
+      && parsed.captions.playerCaptionsTracklistRenderer
+      && parsed.captions.playerCaptionsTracklistRenderer.captionTracks;
     const text = await parseTracksAndFetch(tracks);
     if (text) return buildResult(text);
   } catch (e) {}
@@ -914,31 +956,55 @@ async function extractYouTubeTranscriptFromPage() {
   const existing = readTranscriptDOM();
   if (existing && existing.length > 100) return buildResult(existing.slice(0, 15000));
 
-  // ── Method 3: Automate "Show more" → "Show transcript" → read DOM ──
+  // ── Method 3a: New "In this video" panel — click the Transcript tab if visible ──
   try {
-    const expandSelectors = [
-      '#description-inline-expander #expand',
-      'ytd-text-inline-expander #expand',
-      'ytd-text-inline-expander tp-yt-paper-button',
-      '#description tp-yt-paper-button[aria-expanded="false"]',
-    ];
-    for (var i = 0; i < expandSelectors.length; i++) {
-      var btn = document.querySelector(expandSelectors[i]);
-      if (btn) { btn.click(); break; }
-    }
-    await sleep(600);
-
-    var allClickable = Array.from(document.querySelectorAll(
-      'button, tp-yt-paper-button, yt-button-shape button, ytd-button-renderer button'
+    var allTabs = Array.from(document.querySelectorAll(
+      'tp-yt-paper-tab, [role="tab"], yt-tab-shape'
     ));
-    var transcriptBtn = allClickable.find(function(b) {
-      var txt = (b.innerText || b.textContent || '').trim().toLowerCase();
-      return txt === 'show transcript' || txt === 'transcript';
+    var transcriptTab = allTabs.find(function(tab) {
+      var txt = (tab.innerText || tab.textContent || '').trim().toLowerCase();
+      return txt === 'transcript';
     });
+    if (transcriptTab) {
+      transcriptTab.click();
+      await sleep(1000);
+      var tabText = readTranscriptDOM();
+      if (tabText && tabText.length > 100) return buildResult(tabText.slice(0, 15000));
+    }
+  } catch (e) {}
+
+  // ── Method 3b: "Show transcript" button (new UI: ytd-video-description-transcript-section-renderer,
+  //               old UI: in description after expanding) ──
+  try {
+    // First try the aria-label — most reliable, works without needing to expand description
+    var transcriptBtn = document.querySelector('[aria-label="Show transcript"]');
+
+    if (!transcriptBtn) {
+      // Old UI: expand the description first, then find the button by text
+      const expandSelectors = [
+        '#description-inline-expander #expand',
+        'ytd-text-inline-expander #expand',
+        'ytd-text-inline-expander tp-yt-paper-button',
+        '#description tp-yt-paper-button[aria-expanded="false"]',
+      ];
+      for (var i = 0; i < expandSelectors.length; i++) {
+        var expBtn = document.querySelector(expandSelectors[i]);
+        if (expBtn) { expBtn.click(); break; }
+      }
+      await sleep(600);
+
+      var allClickable = Array.from(document.querySelectorAll(
+        'button, tp-yt-paper-button, yt-button-shape button, ytd-button-renderer button'
+      ));
+      transcriptBtn = allClickable.find(function(b) {
+        var txt = (b.innerText || b.textContent || '').trim().toLowerCase();
+        return txt === 'show transcript' || txt === 'transcript' || txt === 'open transcript';
+      });
+    }
 
     if (transcriptBtn) {
       transcriptBtn.click();
-      await sleep(2000);
+      await sleep(2500);
       var domText = readTranscriptDOM();
       if (domText && domText.length > 100) return buildResult(domText.slice(0, 15000));
     }
@@ -1040,12 +1106,19 @@ function displaySummary(text, type) {
   };
   els.outputLabel.textContent = labels[type] || 'SUMMARY';
 
+  var disclaimer = document.createElement('p');
+  disclaimer.className = 'critique-disclaimer';
+  disclaimer.textContent = 'AI-generated summary using a local model. Verify important details independently.';
+
   if (type === 'key-points' || type === 'youtube-summary') {
     const lines = text.split('\n').map(function(l) {
       return l.replace(/^[-*]\s*/, '').trim();
     }).filter(function(l) {
       return l.length > 5;
     });
+
+    els.summaryBox.innerHTML = '';
+    els.summaryBox.appendChild(disclaimer);
 
     if (lines.length > 1) {
       const ul = document.createElement('ul');
@@ -1054,13 +1127,22 @@ function displaySummary(text, type) {
         li.textContent = line;
         ul.appendChild(li);
       });
-      els.summaryBox.innerHTML = '';
       els.summaryBox.appendChild(ul);
     } else {
-      renderParagraphs(text);
+      text.split('\n').filter(function(l) { return l.trim(); }).forEach(function(line) {
+        const p = document.createElement('p');
+        p.textContent = line.trim();
+        els.summaryBox.appendChild(p);
+      });
     }
   } else {
-    renderParagraphs(text);
+    els.summaryBox.innerHTML = '';
+    els.summaryBox.appendChild(disclaimer);
+    text.split('\n').filter(function(l) { return l.trim(); }).forEach(function(line) {
+      const p = document.createElement('p');
+      p.textContent = line.trim();
+      els.summaryBox.appendChild(p);
+    });
   }
 
   els.output.classList.add('visible');
