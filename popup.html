@@ -7,16 +7,85 @@
   <link rel="stylesheet" href="fonts.css">
 
   <style>
+    /* ── Josh Approved tokens (mirrored from design-system colors_and_type.css) ── */
     :root {
-      --bg:         #f8f9fb;
-      --surface:    #ffffff;
-      --border:     #e0e0ea;
-      --accent:     #c8f165;
-      --accent-dim: #4d7c00;
-      --text:       #17171b;
-      --muted:      #6e6e7a;
-      --danger:     #c42b2b;
-      --radius:     10px;
+      --ink-1000: #0E0E0F;
+      --ink-700:  #3D3D42;
+      --ink-500:  #6B6B72;
+      --ink-300:  #9A9AA0;
+      --ink-200:  #C8C8CC;
+      --ink-100:  #E5E5E2;
+      --ink-50:   #F2F2EE;
+      --paper:    #FAFAF7;
+      --pure-white: #FFFFFF;
+
+      --green-700: #166534;
+      --green-600: #1F8A4C;
+      --green-100: #DCFCE7;
+
+      --amber-700: #92400E;
+      --amber-100: #FEF3C7;
+
+      --red-600:   #B91C1C;
+      --red-100:   #FEE2E2;
+
+      --slate-600: #475569;
+      --slate-100: #E2E8F0;
+
+      --bg:              var(--paper);
+      --bg-elevated:     var(--pure-white);
+      --bg-subtle:       var(--ink-50);
+      --fg:              var(--ink-1000);
+      --fg-muted:        var(--ink-500);
+      --fg-subtle:       var(--ink-300);
+
+      --hairline:        var(--ink-100);
+      --hairline-strong: var(--ink-200);
+
+      --accent:       var(--green-600);
+      --accent-hover: var(--green-700);
+
+      --warning:    var(--amber-700);
+      --warning-bg: var(--amber-100);
+      --danger:     var(--red-600);
+      --danger-bg:  var(--red-100);
+      --info:       var(--slate-600);
+      --info-bg:    var(--slate-100);
+
+      --focus-ring: var(--green-600);
+
+      --radius-sm:  6px;
+      --radius-md:  10px;
+      --radius-lg:  16px;
+
+      --duration-fast: 150ms;
+      --easing: cubic-bezier(0.2, 0, 0, 1);
+
+      --shadow-1: 0 1px 2px rgba(14, 14, 15, 0.06), 0 2px 8px rgba(14, 14, 15, 0.04);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg:              #0B0B0C;
+        --bg-elevated:     #131315;
+        --bg-subtle:       #1A1A1C;
+        --fg:              #F5F5F2;
+        --fg-muted:        #A0A0A6;
+        --fg-subtle:       #6B6B72;
+        --hairline:        #26262A;
+        --hairline-strong: #3D3D42;
+        --warning-bg:      rgba(180, 83, 9, 0.18);
+        --danger-bg:       rgba(185, 28, 28, 0.22);
+        --info-bg:         rgba(71, 85, 105, 0.22);
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      :root { --duration-fast: 0ms; }
+      *, *::before, *::after {
+        animation-duration: 0ms !important;
+        transition-duration: 0ms !important;
+      }
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -25,83 +94,102 @@
       width: 500px;
       min-height: 200px;
       background: var(--bg);
-      color: var(--text);
-      font-family: 'DM Sans', sans-serif;
+      color: var(--fg);
+      font-family: var(--font-body);
       font-size: 14px;
       line-height: 1.5;
       overflow-x: hidden;
       position: relative;
+      -webkit-font-smoothing: antialiased;
     }
 
+    :focus-visible {
+      outline: 2px solid var(--focus-ring);
+      outline-offset: 2px;
+      border-radius: var(--radius-sm);
+    }
+
+    /* ── Header ── */
     .header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 14px 16px 12px;
-      border-bottom: 1px solid var(--border);
+      padding: 16px;
+      border-bottom: 1px solid var(--hairline);
     }
 
-    .logo {
+    .brand {
       display: flex;
       align-items: center;
       gap: 10px;
     }
 
-    .logo-icon {
-      width: 34px;
-      height: 34px;
-      background: var(--accent);
-      border-radius: 8px;
-      display: flex;
+    .brand-icon {
+      display: inline-flex;
       align-items: center;
       justify-content: center;
+      color: var(--fg);
       flex-shrink: 0;
     }
 
-    .logo-icon svg {
-      width: 20px;
-      height: 20px;
-    }
-
-    .logo-text-group {
+    .brand-text {
       display: flex;
       flex-direction: column;
-      gap: 0px;
       line-height: 1.1;
     }
 
-    .logo-text-top {
-      font-family: 'DM Mono', monospace;
-      font-size: 9px;
-      letter-spacing: 1.5px;
+    .brand-eyebrow {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.04em;
       text-transform: uppercase;
-      color: var(--accent-dim);
+      color: var(--fg-muted);
     }
 
-    .logo-text-main {
-      font-family: 'DM Serif Display', serif;
+    .brand-name {
+      font-family: var(--font-heading);
       font-size: 17px;
-      color: var(--text);
-      letter-spacing: -0.3px;
+      color: var(--fg);
+      letter-spacing: -0.02em;
     }
 
-    .header-note {
+    .header-aside {
       display: flex;
       flex-direction: column;
       align-items: flex-end;
-      gap: 3px;
-      font-family: 'DM Mono', monospace;
-      font-size: 9px;
-      color: var(--muted);
-      letter-spacing: 0.3px;
+      gap: 4px;
       text-align: right;
     }
 
+    .header-aside-line {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.04em;
+      color: var(--fg-muted);
+    }
+
+    .btn-learn {
+      background: none;
+      border: none;
+      padding: 0;
+      color: var(--fg-muted);
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.04em;
+      cursor: pointer;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+      text-decoration-color: var(--hairline-strong);
+      transition: color var(--duration-fast) var(--easing);
+    }
+    .btn-learn:hover { color: var(--fg); text-decoration-color: var(--fg); }
+
+    /* ── Controls ── */
     .controls {
       padding: 12px 16px;
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 12px;
     }
 
     .control-row {
@@ -114,78 +202,79 @@
       position: relative;
     }
 
+    .select-label {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--fg-muted);
+      margin-bottom: 5px;
+    }
+
     select {
       width: 100%;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      color: var(--text);
-      font-family: 'DM Sans', sans-serif;
-      font-size: 12px;
-      padding: 7px 28px 7px 10px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--hairline);
+      border-radius: var(--radius-sm);
+      color: var(--fg);
+      font-family: var(--font-body);
+      font-size: 13px;
+      padding: 8px 28px 8px 10px;
       appearance: none;
       cursor: pointer;
       outline: none;
-      transition: border-color 0.15s;
+      transition: border-color var(--duration-fast) var(--easing);
     }
-
-    select:focus { border-color: var(--accent-dim); }
+    select:hover  { border-color: var(--hairline-strong); }
+    select:focus  { border-color: var(--fg); }
 
     .select-wrap::after {
-      content: '▾';
+      content: '';
       position: absolute;
-      right: 9px;
-      top: 50%;
+      right: 10px;
+      top: calc(50% + 7px);
       transform: translateY(-50%);
-      font-size: 10px;
-      color: var(--muted);
+      width: 10px;
+      height: 10px;
+      background: var(--fg-muted);
       pointer-events: none;
+      -webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>") center/contain no-repeat;
+              mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>") center/contain no-repeat;
     }
 
-    .select-label {
-      font-size: 10px;
-      font-family: 'DM Mono', monospace;
-      color: var(--muted);
-      letter-spacing: 0.5px;
-      text-transform: uppercase;
-      margin-bottom: 4px;
-    }
-
-    .btn-summarize {
+    /* ── Primary CTA: ink on paper ── */
+    .btn-primary {
       width: 100%;
-      background: var(--accent);
-      color: #17171b;
-      border: none;
-      border-radius: var(--radius);
-      font-family: 'DM Sans', sans-serif;
+      background: var(--ink-1000);
+      color: var(--paper);
+      border: 1px solid var(--ink-1000);
+      border-radius: var(--radius-md);
+      font-family: var(--font-body-emphasis);
       font-weight: 500;
       font-size: 14px;
-      padding: 10px;
+      padding: 11px 16px;
       cursor: pointer;
-      transition: all 0.15s;
+      transition: opacity var(--duration-fast) var(--easing);
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 7px;
-      letter-spacing: -0.1px;
+      gap: 8px;
+      letter-spacing: -0.005em;
+      min-height: 44px;
     }
-
-    .btn-summarize:hover { background: #d9ff7a; transform: translateY(-1px); }
-    .btn-summarize:active { transform: translateY(0); }
-    .btn-summarize:disabled {
-      background: var(--border);
-      color: var(--muted);
+    .btn-primary:hover  { opacity: 0.9; }
+    .btn-primary:active { opacity: 0.7; }
+    .btn-primary:disabled {
+      opacity: 0.4;
       cursor: not-allowed;
-      transform: none;
     }
+    .btn-primary svg { width: 16px; height: 16px; }
 
-    .btn-summarize svg { width: 15px; height: 15px; }
-
+    /* ── Output ── */
     .output {
       padding: 0 16px 16px;
       display: none;
     }
-
     .output.visible { display: block; }
 
     .output-header {
@@ -193,15 +282,15 @@
       align-items: center;
       justify-content: space-between;
       margin-bottom: 10px;
-      padding-top: 2px;
+      padding-top: 4px;
     }
 
     .output-label {
-      font-family: 'DM Mono', monospace;
+      font-family: var(--font-mono);
       font-size: 10px;
-      letter-spacing: 1px;
+      letter-spacing: 0.04em;
       text-transform: uppercase;
-      color: var(--muted);
+      color: var(--fg-muted);
     }
 
     .output-actions {
@@ -209,367 +298,303 @@
       gap: 6px;
     }
 
-    .btn-copy, .btn-expand {
-      background: none;
-      border: 1px solid #c8c8d8;
-      border-radius: 6px;
-      color: #9090a8;
-      font-family: 'DM Mono', monospace;
+    .btn-chip {
+      background: var(--bg-elevated);
+      border: 1px solid var(--hairline);
+      border-radius: var(--radius-sm);
+      color: var(--fg-muted);
+      font-family: var(--font-mono);
       font-size: 10px;
-      padding: 3px 8px;
+      padding: 4px 9px;
       cursor: pointer;
-      transition: all 0.15s;
-      letter-spacing: 0.3px;
+      transition: border-color var(--duration-fast) var(--easing),
+                  color var(--duration-fast) var(--easing);
+      letter-spacing: 0.04em;
+      text-transform: lowercase;
+    }
+    .btn-chip:hover { border-color: var(--fg); color: var(--fg); }
+    .btn-chip.copied {
+      color: var(--accent);
+      border-color: var(--accent);
     }
 
-    .btn-copy:hover, .btn-expand:hover { border-color: var(--accent-dim); color: var(--accent-dim); }
-    .btn-copy.copied { color: var(--accent-dim); border-color: var(--accent-dim); }
-
     .summary-box {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 13px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--hairline);
+      border-radius: var(--radius-md);
+      padding: 14px;
       max-height: 280px;
       overflow-y: auto;
       scrollbar-width: thin;
-      scrollbar-color: var(--border) transparent;
+      scrollbar-color: var(--hairline-strong) transparent;
     }
 
     .summary-box p {
-      color: var(--text);
-      font-size: 13.5px;
+      color: var(--fg);
+      font-size: 14px;
       line-height: 1.65;
-      margin-bottom: 8px;
+      margin-bottom: 10px;
     }
-
     .summary-box p:last-child { margin-bottom: 0; }
 
     .summary-box ul {
       list-style: none;
       display: flex;
       flex-direction: column;
-      gap: 7px;
+      gap: 8px;
     }
 
     .summary-box li {
       display: flex;
-      gap: 8px;
-      font-size: 13.5px;
+      gap: 10px;
+      font-size: 14px;
       line-height: 1.55;
-      color: var(--text);
+      color: var(--fg);
     }
 
     .summary-box li::before {
-      content: '→';
-      color: var(--accent-dim);
-      font-family: 'DM Mono', monospace;
+      content: '';
       flex-shrink: 0;
-      margin-top: 1px;
+      width: 4px;
+      height: 4px;
+      background: var(--fg-muted);
+      border-radius: 50%;
+      margin-top: 9px;
     }
 
     /* ── Streaming cursor ── */
     .stream-cursor {
       display: inline-block;
-      color: var(--accent-dim);
+      color: var(--accent);
       animation: blink 0.8s step-end infinite;
       margin-left: 2px;
     }
     @keyframes blink { 50% { opacity: 0; } }
 
-    /* ── News critique styles ── */
-    .critique-label {
-      font-size: 9px;
-      font-family: 'DM Mono', monospace;
-      letter-spacing: 1.5px;
-      color: #2d5cc4;
-      text-transform: uppercase;
-      margin-top: 14px;
-      margin-bottom: 6px;
-    }
-    .critique-label:first-child { margin-top: 0; }
-
-    .critique-disclaimer {
-      font-family: 'DM Mono', monospace;
+    /* ── Section labels inside output ── */
+    .section-label {
+      font-family: var(--font-mono);
       font-size: 10px;
-      letter-spacing: 0.3px;
-      color: #7a5200;
-      background: rgba(180, 120, 0, 0.07);
-      border: 1px solid rgba(180, 120, 0, 0.22);
-      border-radius: var(--radius);
-      padding: 7px 10px;
+      letter-spacing: 0.04em;
+      color: var(--fg-muted);
+      text-transform: uppercase;
+      margin-top: 16px;
+      margin-bottom: 8px;
+    }
+    .section-label:first-child { margin-top: 0; }
+
+    /* ── Disclaimer (warning palette) ── */
+    .disclaimer {
+      font-family: var(--font-body);
+      font-size: 12px;
+      color: var(--warning);
+      background: var(--warning-bg);
+      border: 1px solid color-mix(in srgb, var(--warning) 25%, transparent);
+      border-radius: var(--radius-sm);
+      padding: 8px 10px;
       line-height: 1.5;
       margin-bottom: 12px;
     }
 
-    /* ── Comment styles ── */
+    /* ── Comments ── */
     .comment-item {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
+      background: var(--bg-elevated);
+      border: 1px solid var(--hairline);
+      border-radius: var(--radius-md);
       padding: 10px 12px;
       margin-bottom: 8px;
     }
 
     .comment-author {
-      font-family: 'DM Mono', monospace;
+      font-family: var(--font-mono);
       font-size: 10px;
-      color: var(--muted);
-      letter-spacing: 0.3px;
+      color: var(--fg-muted);
+      letter-spacing: 0.04em;
       margin-bottom: 5px;
     }
 
     .comment-text {
       font-size: 13px;
       line-height: 1.55;
-      color: var(--text);
+      color: var(--fg);
       font-style: italic;
     }
 
-    /* ── Recipe styles ── */
-    .recipe-heading {
-      font-size: 10px;
-      font-family: 'DM Mono', monospace;
-      letter-spacing: 1px;
-      color: var(--accent-dim);
-      text-transform: uppercase;
-      margin-top: 14px;
-      margin-bottom: 8px;
-    }
-    .recipe-heading:first-child { margin-top: 0; }
-
-    .recipe-meta {
-      font-size: 11px;
-      color: var(--muted);
-      font-family: 'DM Mono', monospace;
-      letter-spacing: 0.3px;
-      margin-bottom: 12px;
-    }
-
-    .recipe-ingredients {
-      list-style: none;
-      display: flex;
-      flex-direction: column;
-      gap: 5px;
-    }
-
-    .recipe-ingredients li {
-      display: flex;
-      gap: 8px;
-      font-size: 13px;
-      line-height: 1.5;
-      color: var(--text);
-      align-items: baseline;
-    }
-
-    .recipe-ingredients li::before {
-      content: '·';
-      color: var(--accent-dim);
-      font-family: 'DM Mono', monospace;
-      font-size: 16px;
-      flex-shrink: 0;
-      line-height: 1.2;
-    }
-
-    .recipe-steps {
-      list-style: decimal;
-      padding-left: 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    .recipe-steps li {
-      display: list-item;
-      font-size: 13px;
-      line-height: 1.6;
-      color: var(--text);
-    }
-
-    .recipe-steps li::before { content: none; }
-
+    /* ── Loading ── */
     .loading {
       display: none;
       flex-direction: column;
       align-items: center;
       gap: 12px;
-      padding: 24px 16px;
+      padding: 28px 16px;
     }
-
     .loading.visible { display: flex; }
 
     .loading-ring {
-      width: 32px;
-      height: 32px;
-      border: 2px solid var(--border);
-      border-top-color: var(--accent-dim);
+      width: 28px;
+      height: 28px;
+      border: 2px solid var(--hairline);
+      border-top-color: var(--accent);
       border-radius: 50%;
       animation: spin 0.8s linear infinite;
     }
-
     @keyframes spin { to { transform: rotate(360deg); } }
 
     .loading-text {
-      font-family: 'DM Mono', monospace;
+      font-family: var(--font-mono);
       font-size: 11px;
-      color: var(--muted);
-      letter-spacing: 0.5px;
+      color: var(--fg-muted);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
     }
 
     .loading-sub {
+      font-family: var(--font-mono);
       font-size: 10px;
-      color: var(--muted);
-      font-family: 'DM Mono', monospace;
-      letter-spacing: 0.3px;
+      color: var(--fg-subtle);
+      letter-spacing: 0.04em;
     }
 
+    /* ── Error / setup boxes ── */
     .error-box {
       display: none;
       margin: 0 16px 16px;
-      background: rgba(196, 43, 43, 0.06);
-      border: 1px solid rgba(196, 43, 43, 0.2);
-      border-radius: var(--radius);
+      background: var(--danger-bg);
+      border: 1px solid color-mix(in srgb, var(--danger) 25%, transparent);
+      border-radius: var(--radius-md);
       padding: 12px;
     }
-
     .error-box.visible { display: block; }
-
     .error-box p {
-      font-size: 12.5px;
+      font-size: 13px;
       color: var(--danger);
       line-height: 1.5;
     }
-
-    .error-box a { color: var(--accent-dim); text-decoration: none; }
+    .error-box a { color: var(--fg); text-decoration: underline; }
 
     .setup-box {
       display: none;
       margin: 0 16px 16px;
-      background: rgba(45, 92, 196, 0.05);
-      border: 1px solid rgba(45, 92, 196, 0.18);
-      border-radius: var(--radius);
+      background: var(--info-bg);
+      border: 1px solid color-mix(in srgb, var(--info) 25%, transparent);
+      border-radius: var(--radius-md);
       padding: 13px;
       flex-direction: column;
       gap: 10px;
     }
-
     .setup-box.visible { display: flex; }
-
     .setup-box p {
-      font-size: 12.5px;
-      color: var(--text);
+      font-size: 13px;
+      color: var(--fg);
       line-height: 1.6;
     }
 
-    .btn-setup-action {
-      background: #2d5cc4;
-      color: #ffffff;
-      border: none;
-      border-radius: var(--radius);
-      font-family: 'DM Sans', sans-serif;
-      font-size: 12px;
+    .btn-secondary {
+      background: var(--bg-elevated);
+      color: var(--fg);
+      border: 1px solid var(--hairline);
+      border-radius: var(--radius-md);
+      font-family: var(--font-body-emphasis);
+      font-size: 13px;
       font-weight: 500;
-      padding: 8px 12px;
+      padding: 9px 14px;
       cursor: pointer;
-      transition: background 0.15s;
+      transition: border-color var(--duration-fast) var(--easing);
       text-align: left;
+      min-height: 40px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
     }
+    .btn-secondary:hover { border-color: var(--fg); }
+    .btn-secondary svg { width: 14px; height: 14px; flex-shrink: 0; }
 
-    .btn-setup-action:hover { background: #3d6cd4; }
-
+    /* ── Unsupported state ── */
     .unsupported {
       display: none;
       flex-direction: column;
-      gap: 10px;
-      padding: 16px;
+      gap: 12px;
+      padding: 20px 16px;
+    }
+    .unsupported.visible { display: flex; }
+
+    .unsupported-icon {
+      color: var(--warning);
+      width: 28px;
+      height: 28px;
     }
 
-    .unsupported.visible { display: flex; }
-    .unsupported-icon { font-size: 28px; }
-
     .unsupported h3 {
-      font-family: 'DM Serif Display', serif;
+      font-family: var(--font-heading);
       font-size: 16px;
-      color: var(--text);
+      color: var(--fg);
+      letter-spacing: -0.02em;
     }
 
     .unsupported p {
-      font-size: 12.5px;
-      color: var(--muted);
+      font-size: 13px;
+      color: var(--fg-muted);
       line-height: 1.6;
     }
 
-    .unsupported a { color: var(--accent-dim); text-decoration: none; }
+    .unsupported a { color: var(--fg); text-decoration: underline; text-underline-offset: 2px; }
 
     .req-list {
       list-style: none;
       display: flex;
       flex-direction: column;
-      gap: 5px;
+      gap: 6px;
     }
 
     .req-list li {
-      font-size: 12px;
-      color: var(--muted);
+      font-size: 12.5px;
+      color: var(--fg-muted);
       display: flex;
-      gap: 7px;
+      gap: 8px;
+      align-items: baseline;
     }
 
-    .req-list li::before { content: '·'; color: var(--accent-dim); }
+    .req-list li::before {
+      content: '';
+      flex-shrink: 0;
+      width: 3px;
+      height: 3px;
+      background: var(--fg-muted);
+      border-radius: 50%;
+      transform: translateY(-3px);
+    }
+
+    /* ── Footer ── */
+    .divider { height: 1px; background: var(--hairline); margin: 0; }
 
     .footer {
-      border-top: 1px solid var(--border);
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .btn-tip {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--hairline);
+      border-radius: var(--radius-md);
       padding: 10px 16px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .footer-note {
-      font-size: 10px;
-      font-family: 'DM Mono', monospace;
-      color: var(--muted);
-      letter-spacing: 0.3px;
-    }
-
-    .btn-coffee {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      background: rgba(160, 110, 0, 0.07);
-      border: 1px solid rgba(160, 110, 0, 0.3);
-      border-radius: 20px;
-      padding: 7px 20px;
-      color: #7a5500;
-      font-family: 'DM Sans', sans-serif;
-      font-size: 12px;
+      color: var(--fg);
+      font-family: var(--font-body-emphasis);
+      font-size: 13px;
       font-weight: 500;
       cursor: pointer;
       text-decoration: none;
-      transition: all 0.15s;
+      transition: border-color var(--duration-fast) var(--easing);
       width: 100%;
+      min-height: 44px;
     }
-
-    .btn-coffee:hover { background: rgba(160, 110, 0, 0.13); border-color: rgba(160, 110, 0, 0.5); }
-
-    .divider { height: 1px; background: var(--border); margin: 0; }
-
-    .btn-learn {
-      background: none;
-      border: none;
-      padding: 0;
-      color: var(--muted);
-      font-family: 'DM Mono', monospace;
-      font-size: 10px;
-      letter-spacing: 0.3px;
-      cursor: pointer;
-      text-decoration: underline;
-      text-underline-offset: 2px;
-      transition: color 0.15s;
-    }
-
-    .btn-learn:hover { color: var(--accent-dim); }
+    .btn-tip:hover { border-color: var(--fg); }
+    .btn-tip svg { width: 15px; height: 15px; flex-shrink: 0; }
 
     /* ── About overlay ── */
     body:has(.about-overlay.visible) {
@@ -584,51 +609,50 @@
       flex-direction: column;
       z-index: 100;
     }
-
     .about-overlay.visible { display: flex; }
 
     .about-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 14px 16px 12px;
-      border-bottom: 1px solid var(--border);
+      padding: 16px;
+      border-bottom: 1px solid var(--hairline);
       flex-shrink: 0;
     }
 
     .about-title {
-      font-family: 'DM Serif Display', serif;
+      font-family: var(--font-heading);
       font-size: 17px;
-      color: var(--text);
+      color: var(--fg);
+      letter-spacing: -0.02em;
     }
 
-    .btn-close {
+    .btn-icon {
       background: none;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      color: var(--muted);
-      font-size: 14px;
-      width: 28px;
-      height: 28px;
-      display: flex;
+      border: 1px solid var(--hairline);
+      border-radius: var(--radius-sm);
+      color: var(--fg-muted);
+      width: 32px;
+      height: 32px;
+      display: inline-flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      transition: all 0.15s;
-      line-height: 1;
+      transition: border-color var(--duration-fast) var(--easing),
+                  color var(--duration-fast) var(--easing);
     }
-
-    .btn-close:hover { border-color: var(--text); color: var(--text); }
+    .btn-icon:hover { border-color: var(--fg); color: var(--fg); }
+    .btn-icon svg { width: 14px; height: 14px; }
 
     .about-body {
       padding: 16px;
       overflow-y: auto;
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 18px;
       flex: 1;
       scrollbar-width: thin;
-      scrollbar-color: var(--border) transparent;
+      scrollbar-color: var(--hairline-strong) transparent;
     }
 
     .about-section {
@@ -638,16 +662,16 @@
     }
 
     .about-section-label {
-      font-family: 'DM Mono', monospace;
-      font-size: 9px;
-      letter-spacing: 1.5px;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.04em;
       text-transform: uppercase;
-      color: var(--accent-dim);
+      color: var(--fg-muted);
     }
 
     .about-section p {
       font-size: 13px;
-      color: var(--muted);
+      color: var(--fg);
       line-height: 1.65;
     }
 
@@ -660,70 +684,77 @@
 
     .about-checks li {
       display: flex;
-      gap: 9px;
+      gap: 10px;
+      align-items: flex-start;
       font-size: 13px;
-      color: var(--text);
+      color: var(--fg);
       line-height: 1.5;
     }
 
-    .about-checks li::before {
-      content: '✓';
-      color: var(--accent-dim);
-      font-family: 'DM Mono', monospace;
-      font-size: 11px;
+    .about-checks li svg {
       flex-shrink: 0;
-      margin-top: 1px;
+      width: 14px;
+      height: 14px;
+      color: var(--accent);
+      margin-top: 3px;
     }
 
     .about-link {
-      color: var(--accent-dim);
-      text-decoration: none;
-      font-family: 'DM Mono', monospace;
-      font-size: 11px;
+      color: var(--fg);
+      text-decoration: underline;
+      text-underline-offset: 3px;
+      text-decoration-color: var(--hairline-strong);
+      font-family: var(--font-body);
+      font-size: 13px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: text-decoration-color var(--duration-fast) var(--easing);
     }
-
-    .about-link:hover { text-decoration: underline; }
+    .about-link:hover { text-decoration-color: var(--fg); }
+    .about-link svg { width: 13px; height: 13px; flex-shrink: 0; }
   </style>
 </head>
 <body>
 
   <!-- HEADER -->
   <div class="header">
-    <div class="logo">
-
-      <div class="logo-icon">
-        <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M10 2L3.5 4.5V9.5C3.5 13.25 6.25 16.75 10 18C13.75 16.75 16.5 13.25 16.5 9.5V4.5L10 2Z"
-                stroke="#17171b" stroke-width="1.4" stroke-linejoin="round" fill="rgba(0,0,0,0.08)"/>
-          <path d="M10 7v2M10 11v2M8 9.5H7M13 9.5H12" stroke="#17171b" stroke-width="1.3" stroke-linecap="round"/>
-          <circle cx="10" cy="9.5" r="1.2" fill="#17171b"/>
+    <div class="brand">
+      <span class="brand-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          <polyline points="9 12 11 14 15 10"/>
         </svg>
-      </div>
-
-      <!-- Two-line wordmark: "PRIVATE AI" above, "Summary" below -->
-      <div class="logo-text-group">
-        <span class="logo-text-top">Private AI</span>
-        <span class="logo-text-main">Summary</span>
+      </span>
+      <div class="brand-text">
+        <span class="brand-eyebrow">Private AI</span>
+        <span class="brand-name">Summary</span>
       </div>
     </div>
 
-    <div class="header-note">
-      <span>no servers · no tracking · open source</span>
-      <button class="btn-learn" id="btnLearn">learn more</button>
+    <div class="header-aside">
+      <span class="header-aside-line">No servers · no tracking · open source</span>
+      <button class="btn-learn" id="btnLearn">Learn more</button>
     </div>
   </div>
 
   <!-- UNSUPPORTED STATE -->
   <div class="unsupported" id="unsupported">
-    <div class="unsupported-icon">⚠️</div>
+    <span class="unsupported-icon">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+        <line x1="12" y1="9" x2="12" y2="13"/>
+        <line x1="12" y1="17" x2="12.01" y2="17"/>
+      </svg>
+    </span>
     <h3>On-device AI not available</h3>
-    <p>Private AI Summary uses Chrome's built-in Gemini Nano model, which requires:</p>
+    <p>This extension uses Chrome's built-in Gemini Nano model. It needs:</p>
     <ul class="req-list">
       <li>Chrome 138 or newer</li>
       <li>Windows 10/11 or macOS 13+</li>
       <li>4 GB+ GPU VRAM or 16 GB RAM</li>
-      <li>22 GB free storage (for model)</li>
-      <li>Unmetered internet (first download only)</li>
+      <li>22 GB free storage for the model</li>
+      <li>Unmetered internet for the first download</li>
     </ul>
     <p>You may also need to enable the flag at
       <a href="#" id="flagLink">chrome://flags/#optimization-guide-on-device-model</a>
@@ -734,14 +765,13 @@
   <!-- CONTROLS -->
   <div class="controls" id="controls">
     <div class="control-row">
-
       <div class="select-wrap">
         <div class="select-label">Format</div>
         <select id="summaryType">
-          <option value="key-points">📋 Key Points</option>
-          <option value="news-critique">🔍 News Critique</option>
-          <option value="youtube-summary">▶ YouTube Summary</option>
-          <option value="recipe">🍳 Get Recipe</option>
+          <option value="key-points">Key points</option>
+          <option value="news-critique">News critique</option>
+          <option value="youtube-summary">YouTube summary</option>
+          <option value="recipe">Get recipe</option>
         </select>
       </div>
 
@@ -755,9 +785,12 @@
       </div>
     </div>
 
-    <button class="btn-summarize" id="btnSummarize">
-      <svg viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M7.5 1v13M1 7.5h13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+    <button class="btn-primary" id="btnSummarize">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+        <polyline points="14 2 14 8 20 8"/>
+        <line x1="8" y1="13" x2="16" y2="13"/>
+        <line x1="8" y1="17" x2="13" y2="17"/>
       </svg>
       <span>Summarize this page</span>
     </button>
@@ -766,8 +799,8 @@
   <!-- LOADING -->
   <div class="loading" id="loading">
     <div class="loading-ring"></div>
-    <div class="loading-text" id="loadingText">EXTRACTING CONTENT</div>
-    <div class="loading-sub">running on your device · zero data sent</div>
+    <div class="loading-text" id="loadingText">Extracting content</div>
+    <div class="loading-sub">Running on your device · zero data sent</div>
   </div>
 
   <!-- ERROR -->
@@ -778,16 +811,16 @@
   <!-- SETUP HELP -->
   <div class="setup-box" id="setupBox">
     <p id="setupText"></p>
-    <button class="btn-setup-action" id="btnSetupAction"></button>
+    <button class="btn-secondary" id="btnSetupAction"></button>
   </div>
 
   <!-- OUTPUT -->
   <div class="output" id="output">
     <div class="output-header">
-      <span class="output-label" id="outputLabel">SUMMARY</span>
+      <span class="output-label" id="outputLabel">Summary</span>
       <div class="output-actions">
-        <button class="btn-copy" id="btnCopy">copy</button>
-        <button class="btn-expand" id="btnExpand">expand</button>
+        <button class="btn-chip" id="btnCopy">copy</button>
+        <button class="btn-chip" id="btnExpand">expand</button>
       </div>
     </div>
     <div class="summary-box" id="summaryBox"></div>
@@ -797,8 +830,15 @@
 
   <!-- FOOTER -->
   <div class="footer">
-    <a class="btn-coffee" href="https://buymeacoffee.com/jtysonwilliams" target="_blank" id="coffeeBtn">
-      ☕ buy me a coffee
+    <a class="btn-tip" href="https://buymeacoffee.com/jtysonwilliams" target="_blank" id="coffeeBtn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M18 8h1a4 4 0 0 1 0 8h-1"/>
+        <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/>
+        <line x1="6" y1="2" x2="6" y2="4"/>
+        <line x1="10" y1="2" x2="10" y2="4"/>
+        <line x1="14" y1="2" x2="14" y2="4"/>
+      </svg>
+      <span>Buy me a coffee</span>
     </a>
   </div>
 
@@ -806,7 +846,12 @@
   <div class="about-overlay" id="aboutOverlay">
     <div class="about-header">
       <span class="about-title">How it works</span>
-      <button class="btn-close" id="btnCloseAbout">✕</button>
+      <button class="btn-icon" id="btnCloseAbout" aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
     </div>
     <div class="about-body">
 
@@ -818,10 +863,22 @@
       <div class="about-section">
         <span class="about-section-label">What that means for you</span>
         <ul class="about-checks">
-          <li>No account or sign-in required</li>
-          <li>Your content is never sent to any server</li>
-          <li>No usage data, analytics, or tracking of any kind</li>
-          <li>Free forever — no subscription, no paywall</li>
+          <li>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>No account or sign-in</span>
+          </li>
+          <li>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>Your content is never sent to any server</span>
+          </li>
+          <li>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>No usage data, analytics, or tracking</span>
+          </li>
+          <li>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>Free. No subscription, no paywall.</span>
+          </li>
         </ul>
       </div>
 
@@ -832,19 +889,34 @@
 
       <div class="about-section">
         <span class="about-section-label">Open source</span>
-        <p>This extension is open source. You can inspect every line of code to verify nothing is hidden. <a href="https://github.com/jtysonwilliams/PrivateAISummary" target="_blank" class="about-link">View on GitHub →</a></p>
+        <p>You can read every line of code to verify nothing is hidden.</p>
+        <a href="https://github.com/jtysonwilliams/PrivateAISummary" target="_blank" class="about-link">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
+          <span>View on GitHub</span>
+        </a>
       </div>
 
       <div class="about-section">
         <span class="about-section-label">Feedback</span>
-        <p>Found a bug or have a suggestion? I'd love to hear it.</p>
-        <a class="about-link" id="feedbackLink" href="#">✉ Send feedback →</a>
+        <p>Found a bug or have a suggestion? I'd like to hear it.</p>
+        <a class="about-link" id="feedbackLink" href="#">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22 6 12 13 2 6"/></svg>
+          <span>Send feedback</span>
+        </a>
+      </div>
+
+      <div class="about-section">
+        <span class="about-section-label">Tip jar</span>
+        <p>If this saved you a subscription, you can throw a few dollars our way. Or don't — the extension's the same either way.</p>
       </div>
 
       <div class="about-section">
         <span class="about-section-label">Enjoying it?</span>
-        <p>A review on the Chrome Web Store helps others find this extension.</p>
-        <a class="about-link" href="https://chromewebstore.google.com/detail/jbfgdnfdmolgdpohlcclaolkcanddjnm/reviews" target="_blank">⭐ Leave a review →</a>
+        <p>A review on the Chrome Web Store helps others find it.</p>
+        <a class="about-link" href="https://chromewebstore.google.com/detail/jbfgdnfdmolgdpohlcclaolkcanddjnm/reviews" target="_blank">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          <span>Leave a review</span>
+        </a>
       </div>
 
     </div>

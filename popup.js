@@ -85,7 +85,7 @@ async function init() {
 function applyFormatUI(format) {
   const span = els.btnSummarize.querySelector('span');
   if (format === 'recipe') {
-    span.textContent = 'Extract Recipe';
+    span.textContent = 'Extract recipe';
   } else if (format === 'news-critique') {
     span.textContent = 'Critique this article';
   } else if (format === 'youtube-summary') {
@@ -118,7 +118,7 @@ async function runSummary() {
   // NEWS CRITIQUE MODE
   if (type === 'news-critique') {
     try {
-      setLoadingText('EXTRACTING CONTENT');
+      setLoadingText('Extracting content');
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
       let extracted;
@@ -153,7 +153,7 @@ async function runSummary() {
         return;
       }
 
-      setLoadingText('LOADING ON-DEVICE MODEL');
+      setLoadingText('Loading on-device model');
       var availability;
       try {
         availability = await lm.availability();
@@ -165,7 +165,7 @@ async function runSummary() {
         setLoading(false);
         showSetup(
           'The on-device AI model isn\'t ready yet. This sometimes takes a few minutes after enabling the Chrome feature. Try closing and reopening Chrome, then try again.',
-          'Open Chrome flags →',
+          'Open Chrome flags',
           'chrome://flags'
         );
         return;
@@ -173,12 +173,12 @@ async function runSummary() {
 
       var session;
       if (availability === 'downloadable') {
-        setLoadingText('DOWNLOADING MODEL (ONCE)');
+        setLoadingText('Downloading model (once)');
         session = await lm.create({
           monitor: function(m) {
             m.addEventListener('downloadprogress', function(e) {
               var pct = Math.round((e.loaded || 0) * 100);
-              setLoadingText('DOWNLOADING MODEL ' + pct + '%');
+              setLoadingText('Downloading model ' + pct + '%');
             });
           }
         });
@@ -186,7 +186,7 @@ async function runSummary() {
         session = await lm.create();
       }
 
-      setLoadingText('ANALYZING ARTICLE');
+      setLoadingText('Analyzing article');
 
       const prompt = 'You are a media literacy analyst. Analyze the article below and respond with ONLY these five labeled sections. Do not add any text before the first section or after the last section.\n\n'
         + 'KEY POINTS:\nList 3-5 bullet points of the main facts and claims. Include specific names, numbers, and direct claims from the article. Do not editorialize. Start each bullet with *.\n\n'
@@ -211,7 +211,7 @@ async function runSummary() {
         if (!streamingStarted) {
           streamingStarted = true;
           setLoading(false);
-          els.outputLabel.textContent = 'NEWS CRITIQUE';
+          els.outputLabel.textContent = 'News critique';
           els.output.classList.add('visible');
         }
 
@@ -236,7 +236,7 @@ async function runSummary() {
   // RECIPE MODE
   if (type === 'recipe') {
     try {
-      setLoadingText('FINDING RECIPE');
+      setLoadingText('Finding recipe');
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
       let result;
@@ -271,7 +271,7 @@ async function runSummary() {
         throw new Error("Navigate to a YouTube video page first, then try again.");
       }
 
-      setLoadingText('EXTRACTING TRANSCRIPT');
+      setLoadingText('Extracting transcript');
       let ytResult;
       try {
         const res = await chrome.scripting.executeScript({
@@ -289,7 +289,7 @@ async function runSummary() {
       }
       lastMeta = ytResult;
 
-      setLoadingText('LOADING ON-DEVICE MODEL');
+      setLoadingText('Loading on-device model');
       const ytAvailability = await Summarizer.availability();
       const ytLang = els.summaryLanguage.value;
 
@@ -303,12 +303,12 @@ async function runSummary() {
 
       let ytSummarizer;
       if (ytAvailability === 'downloadable') {
-        setLoadingText('DOWNLOADING MODEL (ONCE)');
+        setLoadingText('Downloading model (once)');
         ytSummarizer = await Summarizer.create(Object.assign({}, ytOptions, {
           monitor: function(m) {
             m.addEventListener('downloadprogress', function(e) {
               const pct = Math.round((e.loaded || 0) * 100);
-              setLoadingText('DOWNLOADING MODEL ' + pct + '%');
+              setLoadingText('Downloading model ' + pct + '%');
             });
           }
         }));
@@ -316,7 +316,7 @@ async function runSummary() {
         ytSummarizer = await Summarizer.create(ytOptions);
       }
 
-      setLoadingText('SUMMARIZING ON-DEVICE');
+      setLoadingText('Summarizing on-device');
 
       let ytStreamedText = '';
       let ytPrevChunk = '';
@@ -334,7 +334,7 @@ async function runSummary() {
         if (!ytStreamingStarted) {
           ytStreamingStarted = true;
           setLoading(false);
-          els.outputLabel.textContent = 'VIDEO SUMMARY';
+          els.outputLabel.textContent = 'Video summary';
           els.output.classList.add('visible');
         }
 
@@ -363,7 +363,7 @@ async function runSummary() {
 
   // SUMMARIZE MODE
   try {
-    setLoadingText('EXTRACTING CONTENT');
+    setLoadingText('Extracting content');
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
     let extracted;
@@ -382,7 +382,7 @@ async function runSummary() {
     }
     lastMeta = extracted;
 
-    setLoadingText('LOADING ON-DEVICE MODEL');
+    setLoadingText('Loading on-device model');
     const availability = await Summarizer.availability();
     const lang = els.summaryLanguage.value;
 
@@ -396,12 +396,12 @@ async function runSummary() {
 
     let summarizer;
     if (availability === 'downloadable') {
-      setLoadingText('DOWNLOADING MODEL (ONCE)');
+      setLoadingText('Downloading model (once)');
       summarizer = await Summarizer.create(Object.assign({}, options, {
         monitor: function(m) {
           m.addEventListener('downloadprogress', function(e) {
             const pct = Math.round((e.loaded || 0) * 100);
-            setLoadingText('DOWNLOADING MODEL ' + pct + '%');
+            setLoadingText('Downloading model ' + pct + '%');
           });
         }
       }));
@@ -409,7 +409,7 @@ async function runSummary() {
       summarizer = await Summarizer.create(options);
     }
 
-    setLoadingText('SUMMARIZING ON-DEVICE');
+    setLoadingText('Summarizing on-device');
 
     let streamedText = '';
     let prevChunk = '';
@@ -427,7 +427,7 @@ async function runSummary() {
       if (!streamingStarted) {
         streamingStarted = true;
         setLoading(false);
-        els.outputLabel.textContent = options.type === 'key-points' ? 'KEY POINTS' : 'SUMMARY';
+        els.outputLabel.textContent = options.type === 'key-points' ? 'Key points' : 'Summary';
         els.output.classList.add('visible');
       }
 
@@ -605,10 +605,10 @@ function openExpandTab(text, type, meta) {
 
   if (type === 'news-critique') {
     var sectionDefs = [
-      { key: 'KEY POINTS',       label: 'Key Points' },
-      { key: "WHAT'S MISSING",   label: "What's Missing" },
-      { key: 'WHO BENEFITS',     label: 'Who Benefits' },
-      { key: 'QUESTIONS TO ASK', label: 'Questions to Ask' },
+      { key: 'KEY POINTS',       label: 'Key points' },
+      { key: "WHAT'S MISSING",   label: "What's missing" },
+      { key: 'WHO BENEFITS',     label: 'Who benefits' },
+      { key: 'QUESTIONS TO ASK', label: 'Questions to ask' },
     ];
     contentHtml += '<p class="disclaimer">AI-generated analysis using a local model. Verify all facts independently.</p>';
     for (var i = 0; i < sectionDefs.length; i++) {
@@ -638,7 +638,7 @@ function openExpandTab(text, type, meta) {
     }
   } else {
     contentHtml += '<p class="disclaimer">AI-generated summary using a local model. Verify important details independently.</p>';
-    var kpLabel = type === 'key-points' ? 'Key Points' : type === 'youtube-summary' ? 'Video Summary' : 'Summary';
+    var kpLabel = type === 'key-points' ? 'Key points' : type === 'youtube-summary' ? 'Video summary' : 'Summary';
     contentHtml += '<h2>' + kpLabel + '</h2>';
     var kpLines = text.split('\n').map(function(l) {
       return l.replace(/^[-*]\s*/, '').trim();
@@ -652,7 +652,7 @@ function openExpandTab(text, type, meta) {
     }
 
     if (type === 'youtube-summary' && meta && meta.topComments && meta.topComments.length) {
-      contentHtml += '<h2>Top Comments</h2>';
+      contentHtml += '<h2>Top comments</h2>';
       meta.topComments.forEach(function(comment) {
         contentHtml += '<div class="comment-item">';
         if (comment.author) contentHtml += '<p class="comment-author">' + escapeHtml(comment.author) + '</p>';
@@ -666,34 +666,46 @@ function openExpandTab(text, type, meta) {
     ? '<p class="meta">' + escapeHtml(metaParts.join('  ·  ')) + '</p>'
     : '';
   var urlHtml = url
-    ? '<a class="source-url" href="' + escapeHtml(url) + '" target="_blank">View original ↗</a>'
+    ? '<a class="source-url" href="' + escapeHtml(url) + '" target="_blank">View original</a>'
     : '';
 
   var html = '<!DOCTYPE html><html><head><meta charset="UTF-8">'
     + '<title>' + escapeHtml(title) + '</title>'
     + '<style>'
+    + ':root {'
+    + '  --ink: #0E0E0F; --paper: #FAFAF7; --pure-white: #FFFFFF;'
+    + '  --fg-muted: #6B6B72; --fg-subtle: #9A9AA0;'
+    + '  --hairline: #E5E5E2; --hairline-strong: #C8C8CC;'
+    + '  --accent: #1F8A4C;'
+    + '  --warning: #92400E; --warning-bg: #FEF3C7;'
+    + '  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;'
+    + '  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;'
+    + '}'
+    + '@media (prefers-color-scheme: dark) {'
+    + '  :root { --ink: #F5F5F2; --paper: #0B0B0C; --pure-white: #131315; --fg-muted: #A0A0A6; --fg-subtle: #6B6B72; --hairline: #26262A; --hairline-strong: #3D3D42; --warning-bg: rgba(180,83,9,0.18); }'
+    + '}'
     + '* { box-sizing: border-box; margin: 0; padding: 0; }'
-    + 'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #17171b; background: #f8f9fb; line-height: 1.6; }'
+    + 'body { font-family: var(--font-sans); color: var(--ink); background: var(--paper); line-height: 1.6; -webkit-font-smoothing: antialiased; }'
     + '.page { max-width: 680px; margin: 0 auto; padding: 48px 40px; }'
-    + '.badge { font-family: monospace; font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #4d7c00; margin-bottom: 24px; }'
-    + 'h1 { font-family: Georgia, "Times New Roman", serif; font-size: 28px; line-height: 1.25; margin-bottom: 14px; color: #17171b; }'
-    + '.meta { font-family: monospace; font-size: 11px; color: #6e6e7a; margin-bottom: 8px; line-height: 1.5; }'
-    + '.source-url { display: inline-block; font-family: monospace; font-size: 11px; color: #4d7c00; text-decoration: none; margin-bottom: 28px; }'
-    + '.source-url:hover { text-decoration: underline; }'
-    + '.divider { border: none; border-top: 1px solid #e0e0ea; margin-bottom: 24px; }'
-    + 'h2 { font-family: monospace; font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; color: #2d5cc4; margin-top: 28px; margin-bottom: 12px; }'
+    + '.badge { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--fg-muted); margin-bottom: 24px; }'
+    + 'h1 { font-family: var(--font-sans); font-weight: 600; font-size: 32px; line-height: 1.25; letter-spacing: -0.02em; margin-bottom: 14px; color: var(--ink); }'
+    + '.meta { font-family: var(--font-mono); font-size: 12px; color: var(--fg-muted); margin-bottom: 8px; line-height: 1.5; }'
+    + '.source-url { display: inline-block; font-family: var(--font-mono); font-size: 12px; color: var(--ink); text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--hairline-strong); margin-bottom: 28px; }'
+    + '.source-url:hover { text-decoration-color: var(--ink); }'
+    + '.divider { border: none; border-top: 1px solid var(--hairline); margin-bottom: 24px; }'
+    + 'h2 { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.04em; font-weight: 400; text-transform: uppercase; color: var(--fg-muted); margin-top: 28px; margin-bottom: 12px; }'
     + 'h2:first-of-type { margin-top: 0; }'
     + 'ul { list-style: none; display: flex; flex-direction: column; gap: 10px; }'
-    + 'li { display: flex; gap: 10px; font-size: 14px; line-height: 1.65; color: #17171b; }'
-    + 'li::before { content: "→"; color: #4d7c00; font-family: monospace; flex-shrink: 0; margin-top: 1px; }'
-    + 'p { font-size: 14px; line-height: 1.7; color: #17171b; margin-bottom: 8px; }'
-    + '.disclaimer { font-family: monospace; font-size: 10px; color: #7a5200; background: rgba(180,120,0,0.07); border: 1px solid rgba(180,120,0,0.22); border-radius: 8px; padding: 8px 12px; margin-bottom: 20px; line-height: 1.5; }'
-    + '.comment-item { background: #fff; border: 1px solid #e0e0ea; border-radius: 8px; padding: 10px 13px; margin-bottom: 8px; }'
-    + '.comment-author { font-family: monospace; font-size: 10px; color: #6e6e7a; margin-bottom: 5px; }'
-    + '.comment-text { font-size: 13.5px; line-height: 1.6; color: #17171b; font-style: italic; }'
-    + '.footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid #e0e0ea; font-family: monospace; font-size: 9px; color: #a0a0b0; letter-spacing: 0.5px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px; }'
-    + '.footer a { color: #b0b0c0; text-decoration: none; }'
-    + '.footer a:hover { color: #7a7a9a; text-decoration: underline; }'
+    + 'li { display: flex; gap: 12px; font-size: 15px; line-height: 1.65; color: var(--ink); align-items: flex-start; }'
+    + 'li::before { content: ""; flex-shrink: 0; width: 4px; height: 4px; background: var(--fg-muted); border-radius: 50%; margin-top: 11px; }'
+    + 'p { font-size: 15px; line-height: 1.7; color: var(--ink); margin-bottom: 10px; }'
+    + '.disclaimer { font-family: var(--font-sans); font-size: 13px; color: var(--warning); background: var(--warning-bg); border: 1px solid color-mix(in srgb, var(--warning) 25%, transparent); border-radius: 6px; padding: 9px 12px; margin-bottom: 20px; line-height: 1.5; }'
+    + '.comment-item { background: var(--pure-white); border: 1px solid var(--hairline); border-radius: 10px; padding: 12px 14px; margin-bottom: 8px; }'
+    + '.comment-author { font-family: var(--font-mono); font-size: 11px; color: var(--fg-muted); margin-bottom: 5px; }'
+    + '.comment-text { font-size: 14px; line-height: 1.6; color: var(--ink); font-style: italic; }'
+    + '.footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--hairline); font-family: var(--font-mono); font-size: 11px; color: var(--fg-subtle); letter-spacing: 0.04em; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }'
+    + '.footer a { color: var(--fg-muted); text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--hairline-strong); }'
+    + '.footer a:hover { color: var(--ink); text-decoration-color: var(--ink); }'
     + '@media print { body { background: white; } .page { padding: 0; } .footer a { display: none; } }'
     + '</style></head><body>'
     + '<div class="page">'
@@ -703,7 +715,7 @@ function openExpandTab(text, type, meta) {
     + urlHtml
     + '<hr class="divider">'
     + contentHtml
-    + '<div class="footer"><span>Private AI Summary · Runs entirely on your device · No data sent</span><a href="https://buymeacoffee.com/jtysonwilliams" target="_blank">buy me a coffee ☕</a></div>'
+    + '<div class="footer"><span>Private AI Summary · Runs entirely on your device · No data sent</span><a href="https://buymeacoffee.com/jtysonwilliams" target="_blank">Buy me a coffee</a></div>'
     + '</div></body></html>';
 
   var blob = new Blob([html], { type: 'text/html' });
@@ -715,10 +727,10 @@ function openExpandTab(text, type, meta) {
 // RECIPE TAB
 function openRecipeTab(recipe) {
   const meta = [];
-  if (recipe.totalTime) meta.push('⏱ Total: ' + recipe.totalTime);
+  if (recipe.totalTime) meta.push('Total: ' + recipe.totalTime);
   if (recipe.prepTime)  meta.push('Prep: ' + recipe.prepTime);
   if (recipe.cookTime)  meta.push('Cook: ' + recipe.cookTime);
-  if (recipe.servings)  meta.push('🍽 Serves ' + recipe.servings);
+  if (recipe.servings)  meta.push('Serves ' + recipe.servings);
 
   const ingredientRows = recipe.ingredients.map(function(i) {
     return '<li><span class="cb"></span><span>' + i + '</span></li>';
@@ -744,29 +756,40 @@ function openRecipeTab(recipe) {
     + '<title>' + recipe.title + '</title>'
     + '<style>'
     + '@page { size: letter portrait; margin: 20mm; }'
+    + ':root {'
+    + '  --ink: #0E0E0F; --paper: #FAFAF7;'
+    + '  --fg-muted: #6B6B72; --fg-subtle: #9A9AA0;'
+    + '  --hairline: #E5E5E2; --hairline-strong: #C8C8CC;'
+    + '  --warning: #92400E; --warning-bg: #FEF3C7;'
+    + '  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;'
+    + '  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;'
+    + '}'
+    + '@media (prefers-color-scheme: dark) {'
+    + '  :root { --ink: #F5F5F2; --paper: #0B0B0C; --fg-muted: #A0A0A6; --fg-subtle: #6B6B72; --hairline: #26262A; --hairline-strong: #3D3D42; --warning-bg: rgba(180,83,9,0.18); }'
+    + '}'
     + '* { box-sizing: border-box; margin: 0; padding: 0; }'
-    + 'body { font-family: Georgia, serif; color: #1a1a1a; line-height: 1.6; padding: 32px 40px; max-width: 860px; margin: 0 auto; }'
+    + 'body { font-family: var(--font-sans); color: var(--ink); background: var(--paper); line-height: 1.6; padding: 32px 40px; max-width: 860px; margin: 0 auto; -webkit-font-smoothing: antialiased; }'
     + '.header { text-align: center; margin-bottom: 28px; }'
-    + 'h1 { font-size: 26px; margin-bottom: 10px; }'
-    + '.meta { color: #666; font-size: 12px; font-family: monospace; letter-spacing: 0.3px; }'
+    + 'h1 { font-size: 28px; font-weight: 600; letter-spacing: -0.02em; margin-bottom: 12px; color: var(--ink); }'
+    + '.meta { color: var(--fg-muted); font-size: 12px; font-family: var(--font-mono); letter-spacing: 0.04em; }'
     + '.meta span { display: inline-block; margin: 0 10px; }'
-    + '.source { font-size: 10px; color: #999; font-family: monospace; margin-top: 8px; }'
-    + '.source a { color: #999; text-decoration: none; }'
-    + '.divider { border: none; border-top: 1px solid #ddd; margin-bottom: 24px; }'
+    + '.source { font-size: 11px; color: var(--fg-subtle); font-family: var(--font-mono); margin-top: 8px; }'
+    + '.source a { color: var(--fg-muted); text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--hairline-strong); }'
+    + '.divider { border: none; border-top: 1px solid var(--hairline); margin-bottom: 24px; }'
     + '.columns { display: grid; grid-template-columns: 2fr 3fr; gap: 32px; align-items: start; }'
-    + 'h2 { font-size: 10px; text-transform: uppercase; letter-spacing: 2px; color: #888; border-bottom: 1px solid #ddd; padding-bottom: 5px; margin-bottom: 14px; }'
+    + 'h2 { font-family: var(--font-mono); font-size: 10px; font-weight: 400; text-transform: uppercase; letter-spacing: 0.04em; color: var(--fg-muted); border-bottom: 1px solid var(--hairline); padding-bottom: 6px; margin-bottom: 14px; }'
     + '.ingredients { list-style: none; display: flex; flex-direction: column; gap: 9px; }'
-    + '.ingredients li { display: flex; align-items: flex-start; gap: 9px; font-size: 13px; line-height: 1.5; }'
-    + '.cb { flex-shrink: 0; width: 13px; height: 13px; border: 1.5px solid #aaa; border-radius: 2px; margin-top: 2px; display: inline-block; }'
-    + '.instructions { list-style: decimal; padding-left: 18px; display: flex; flex-direction: column; gap: 12px; }'
-    + '.instructions li { font-size: 13px; line-height: 1.65; }'
-    + '.disclaimer { font-family: monospace; font-size: 10px; color: #7a5200; background: rgba(180,120,0,0.07); border: 1px solid rgba(180,120,0,0.22); border-radius: 6px; padding: 7px 10px; line-height: 1.5; margin-bottom: 20px; }'
-    + '.footer { margin-top: 40px; padding-top: 14px; border-top: 1px solid #ddd; font-family: monospace; font-size: 9px; color: #b0b0b0; letter-spacing: 0.5px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px; }'
-    + '.footer a { color: #b0b0b0; text-decoration: none; }'
-    + '.footer a:hover { color: #888; text-decoration: underline; }'
-    + '@media print { body { padding: 0; max-width: none; margin: 0; } .footer a { display: none; } }'
+    + '.ingredients li { display: flex; align-items: flex-start; gap: 10px; font-size: 14px; line-height: 1.5; color: var(--ink); }'
+    + '.cb { flex-shrink: 0; width: 13px; height: 13px; border: 1.5px solid var(--hairline-strong); border-radius: 3px; margin-top: 3px; display: inline-block; }'
+    + '.instructions { list-style: decimal; padding-left: 20px; display: flex; flex-direction: column; gap: 12px; }'
+    + '.instructions li { font-size: 14px; line-height: 1.65; color: var(--ink); }'
+    + '.disclaimer { font-family: var(--font-sans); font-size: 13px; color: var(--warning); background: var(--warning-bg); border: 1px solid color-mix(in srgb, var(--warning) 25%, transparent); border-radius: 6px; padding: 9px 12px; line-height: 1.5; margin-bottom: 20px; }'
+    + '.footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--hairline); font-family: var(--font-mono); font-size: 11px; color: var(--fg-subtle); letter-spacing: 0.04em; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }'
+    + '.footer a { color: var(--fg-muted); text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--hairline-strong); }'
+    + '.footer a:hover { color: var(--ink); }'
+    + '@media print { body { padding: 0; max-width: none; margin: 0; background: white; } .footer a { display: none; } }'
     + '</style></head><body>'
-    + '<p class="disclaimer">Recipe extracted from source page by Private AI Summary. Check the original for accuracy.</p>'
+    + '<p class="disclaimer">Recipe extracted from the source page. Check the original for accuracy.</p>'
     + '<div class="header">'
     + '<h1>' + recipe.title + '</h1>'
     + metaLine
@@ -777,7 +800,7 @@ function openRecipeTab(recipe) {
     + (ingredientRows ? '<div><h2>Ingredients</h2><ul class="ingredients">' + ingredientRows + '</ul></div>' : '<div></div>')
     + (instructionRows ? '<div><h2>Instructions</h2><ol class="instructions">' + instructionRows + '</ol></div>' : '<div></div>')
     + '</div>'
-    + '<div class="footer"><span>Private AI Summary · Runs entirely on your device · No data sent</span><a href="https://buymeacoffee.com/jtysonwilliams" target="_blank">buy me a coffee ☕</a></div>'
+    + '<div class="footer"><span>Private AI Summary · Runs entirely on your device · No data sent</span><a href="https://buymeacoffee.com/jtysonwilliams" target="_blank">Buy me a coffee</a></div>'
     + '</body></html>';
 
   const blob = new Blob([html], { type: 'text/html' });
@@ -1032,10 +1055,10 @@ function displayNewsCritique(rawText) {
   lastType = 'news-critique';
 
   var sectionDefs = [
-    { key: 'KEY POINTS',       label: 'Key Points' },
-    { key: "WHAT'S MISSING",   label: "What's Missing" },
-    { key: 'WHO BENEFITS',     label: 'Who Benefits' },
-    { key: 'QUESTIONS TO ASK', label: 'Questions to Ask' },
+    { key: 'KEY POINTS',       label: 'Key points' },
+    { key: "WHAT'S MISSING",   label: "What's missing" },
+    { key: 'WHO BENEFITS',     label: 'Who benefits' },
+    { key: 'QUESTIONS TO ASK', label: 'Questions to ask' },
   ];
 
   var sections = [];
@@ -1063,11 +1086,11 @@ function displayNewsCritique(rawText) {
     sections = [{ label: 'Analysis', text: rawText }];
   }
 
-  els.outputLabel.textContent = 'NEWS CRITIQUE';
+  els.outputLabel.textContent = 'News critique';
   els.summaryBox.innerHTML = '';
 
   var disclaimer = document.createElement('p');
-  disclaimer.className = 'critique-disclaimer';
+  disclaimer.className = 'disclaimer';
   disclaimer.textContent = 'AI-generated analysis using a local model. Check all facts for accuracy.';
   els.summaryBox.appendChild(disclaimer);
 
@@ -1077,7 +1100,7 @@ function displayNewsCritique(rawText) {
     if (!sText || !sText.trim()) continue;
 
     var heading = document.createElement('p');
-    heading.className = 'critique-label';
+    heading.className = 'section-label';
     heading.textContent = sLabel;
     els.summaryBox.appendChild(heading);
 
@@ -1111,16 +1134,16 @@ function displaySummary(text, type) {
   lastType = type;
 
   const labels = {
-    'key-points':      'KEY POINTS',
-    'youtube-summary': 'VIDEO SUMMARY',
+    'key-points':      'Key points',
+    'youtube-summary': 'Video summary',
     'tldr':            'TL;DR',
-    'teaser':          'TEASER',
-    'headline':        'HEADLINE'
+    'teaser':          'Teaser',
+    'headline':        'Headline'
   };
-  els.outputLabel.textContent = labels[type] || 'SUMMARY';
+  els.outputLabel.textContent = labels[type] || 'Summary';
 
   var disclaimer = document.createElement('p');
-  disclaimer.className = 'critique-disclaimer';
+  disclaimer.className = 'disclaimer';
   disclaimer.textContent = 'AI-generated summary using a local model. Verify important details independently.';
 
   if (type === 'key-points' || type === 'youtube-summary') {
@@ -1175,8 +1198,8 @@ function appendYouTubeComments(comments) {
   if (!comments || !comments.length) return;
 
   var heading = document.createElement('p');
-  heading.className = 'critique-label';
-  heading.textContent = 'TOP COMMENTS';
+  heading.className = 'section-label';
+  heading.textContent = 'Top comments';
   els.summaryBox.appendChild(heading);
 
   comments.forEach(function(comment) {
@@ -1246,10 +1269,10 @@ function renderSummaryStreaming(text, type) {
 
 function renderNewsCritiqueStreaming(text) {
   var sectionDefs = [
-    { key: 'KEY POINTS',       label: 'Key Points' },
-    { key: "WHAT'S MISSING",   label: "What's Missing" },
-    { key: 'WHO BENEFITS',     label: 'Who Benefits' },
-    { key: 'QUESTIONS TO ASK', label: 'Questions to Ask' },
+    { key: 'KEY POINTS',       label: 'Key points' },
+    { key: "WHAT'S MISSING",   label: "What's missing" },
+    { key: 'WHO BENEFITS',     label: 'Who benefits' },
+    { key: 'QUESTIONS TO ASK', label: 'Questions to ask' },
   ];
 
   var sections = [];
@@ -1273,7 +1296,7 @@ function renderNewsCritiqueStreaming(text) {
   els.summaryBox.innerHTML = '';
 
   var disclaimer = document.createElement('p');
-  disclaimer.className = 'critique-disclaimer';
+  disclaimer.className = 'disclaimer';
   disclaimer.textContent = 'AI-generated analysis using a local model. Check all facts for accuracy.';
   els.summaryBox.appendChild(disclaimer);
 
@@ -1292,7 +1315,7 @@ function renderNewsCritiqueStreaming(text) {
     if (!sText || !sText.trim()) continue;
 
     var heading = document.createElement('p');
-    heading.className = 'critique-label';
+    heading.className = 'section-label';
     heading.textContent = sLabel;
     els.summaryBox.appendChild(heading);
 
