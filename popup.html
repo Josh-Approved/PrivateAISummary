@@ -572,6 +572,10 @@
     .btn-learn:hover { color: var(--accent-dim); }
 
     /* ── About overlay ── */
+    body:has(.about-overlay.visible) {
+      min-height: 460px;
+    }
+
     .about-overlay {
       display: none;
       position: absolute;
@@ -829,6 +833,12 @@
       <div class="about-section">
         <span class="about-section-label">Open source</span>
         <p>This extension is open source. You can inspect every line of code to verify nothing is hidden. <a href="https://github.com/jtysonwilliams/PrivateAISummary" target="_blank" class="about-link">View on GitHub →</a></p>
+      </div>
+
+      <div class="about-section">
+        <span class="about-section-label">Feedback</span>
+        <p>Found a bug or have a suggestion? I'd love to hear it.</p>
+        <a class="about-link" id="feedbackLink" href="#">✉ Send feedback →</a>
       </div>
 
     </div>

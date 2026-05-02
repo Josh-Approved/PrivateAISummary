@@ -32,6 +32,19 @@ async function init() {
     chrome.tabs.create({ url: 'chrome://flags/#optimization-guide-on-device-model' });
   });
 
+  const version = chrome.runtime.getManifest().version;
+  const chromeMatch = navigator.userAgent.match(/Chrome\/([\d.]+)/);
+  const chromeVersion = chromeMatch ? chromeMatch[1] : 'unknown';
+  const feedbackSubject = encodeURIComponent('Private AI Summary Feedback');
+  const feedbackBody = encodeURIComponent(
+    'Hi,\n\n[Replace this with your feedback, or fill in the bug report below]\n\n' +
+    '---\nBUG REPORT (delete if not applicable)\n' +
+    'Extension: Private AI Summary v' + version + '\n' +
+    'Chrome: ' + chromeVersion + '\n'
+  );
+  document.getElementById('feedbackLink').href =
+    'mailto:jtysonwilliams@yahoo.com?subject=' + feedbackSubject + '&body=' + feedbackBody;
+
   const overlay = document.getElementById('aboutOverlay');
   document.getElementById('btnLearn').addEventListener('click', function() {
     overlay.classList.add('visible');
