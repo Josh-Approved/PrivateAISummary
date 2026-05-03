@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <clipPath id="appIconClip">
+      <rect x="0" y="0" width="1024" height="1024" rx="220" ry="220"></rect>
+    </clipPath>
+  </defs>
+  <g clip-path="url(#appIconClip)">
+    <rect x="0" y="0" width="1024" height="1024" fill="#1F8A4C"></rect>
+
+    <g stroke="#FAFAF7" stroke-width="88" stroke-linecap="round" fill="none">
+      <line x1="192" y1="360" x2="832" y2="360"></line>
+      <line x1="192" y1="512" x2="672" y2="512"></line>
+      <line x1="192" y1="664" x2="480" y2="664"></line>
+    </g>
+
+    <rect x="1" y="1" width="1022" height="1022" rx="219" ry="219" fill="none" stroke="#0E0E0F" stroke-opacity="0.06" stroke-width="2"></rect>
+  </g>
+</svg>
