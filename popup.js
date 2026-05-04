@@ -51,7 +51,7 @@ async function init() {
     'Chrome: ' + chromeVersion + '\n'
   );
   document.getElementById('feedbackLink').href =
-    'mailto:jtysonwilliams@yahoo.com?subject=' + feedbackSubject + '&body=' + feedbackBody;
+    'mailto:feedback@joshapproved.com?subject=' + feedbackSubject + '&body=' + feedbackBody;
 
   const overlay = document.getElementById('aboutOverlay');
   document.getElementById('btnLearn').addEventListener('click', function() {

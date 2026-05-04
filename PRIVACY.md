@@ -28,4 +28,4 @@ All fonts and visual assets are bundled within the extension. The extension make
 
 ## Contact
 
-jtysonwilliams@yahoo.com
+info@joshapproved.com
