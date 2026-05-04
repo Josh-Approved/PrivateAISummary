@@ -8,6 +8,7 @@ const els = {
   btnSummarize:    $('btnSummarize'),
   loading:         $('loading'),
   loadingText:     $('loadingText'),
+  loadingSub:      $('loadingSub'),
   output:          $('output'),
   outputLabel:     $('outputLabel'),
   summaryBox:      $('summaryBox'),
@@ -22,6 +23,13 @@ const els = {
 let lastSummaryText = '';
 let lastMeta = null;
 let lastType = '';
+
+// Preview-only: ?preview=download forces the download loading state for visual review.
+if (location.search.includes('preview=download')) {
+  els.loading.classList.add('visible');
+  els.loadingText.textContent = 'Downloading Gemini Nano · 42%';
+  els.loadingSub.textContent = 'First-time setup. Chrome is fetching the on-device AI model. This can take a few minutes.';
+}
 
 // INITIALIZATION
 async function init() {
@@ -146,9 +154,9 @@ async function runSummary() {
       if (!lm) {
         setLoading(false);
         showSetup(
-          'To use this feature, you must turn on an exploratory Google Chrome feature. Click below, then restart Chrome.',
-          'Enable Prompt API for Gemini Nano',
-          'chrome://flags'
+          'News critique needs a one-time Chrome setup. Open the flag below, set it to "Enabled BypassPerfRequirement", and restart Chrome.',
+          'Open Chrome flag',
+          'chrome://flags/#optimization-guide-on-device-model'
         );
         return;
       }
@@ -173,15 +181,16 @@ async function runSummary() {
 
       var session;
       if (availability === 'downloadable') {
-        setLoadingText('Downloading model (once)');
+        setDownloadingState();
         session = await lm.create({
           monitor: function(m) {
             m.addEventListener('downloadprogress', function(e) {
               var pct = Math.round((e.loaded || 0) * 100);
-              setLoadingText('Downloading model ' + pct + '%');
+              setDownloadingState(pct);
             });
           }
         });
+        resetLoadingSub();
       } else {
         session = await lm.create();
       }
@@ -303,15 +312,16 @@ async function runSummary() {
 
       let ytSummarizer;
       if (ytAvailability === 'downloadable') {
-        setLoadingText('Downloading model (once)');
+        setDownloadingState();
         ytSummarizer = await Summarizer.create(Object.assign({}, ytOptions, {
           monitor: function(m) {
             m.addEventListener('downloadprogress', function(e) {
               const pct = Math.round((e.loaded || 0) * 100);
-              setLoadingText('Downloading model ' + pct + '%');
+              setDownloadingState(pct);
             });
           }
         }));
+        resetLoadingSub();
       } else {
         ytSummarizer = await Summarizer.create(ytOptions);
       }
@@ -396,15 +406,16 @@ async function runSummary() {
 
     let summarizer;
     if (availability === 'downloadable') {
-      setLoadingText('Downloading model (once)');
+      setDownloadingState();
       summarizer = await Summarizer.create(Object.assign({}, options, {
         monitor: function(m) {
           m.addEventListener('downloadprogress', function(e) {
             const pct = Math.round((e.loaded || 0) * 100);
-            setLoadingText('Downloading model ' + pct + '%');
+            setDownloadingState(pct);
           });
         }
       }));
+      resetLoadingSub();
     } else {
       summarizer = await Summarizer.create(options);
     }
@@ -715,7 +726,7 @@ function openExpandTab(text, type, meta) {
     + urlHtml
     + '<hr class="divider">'
     + contentHtml
-    + '<div class="footer"><span>Private AI Summary · Runs entirely on your device · No data sent</span><a href="https://buymeacoffee.com/jtysonwilliams" target="_blank">Buy me a coffee</a></div>'
+    + '<div class="footer"><span>Private AI Summary · Everything stays on your device</span><a href="https://buymeacoffee.com/jtysonwilliams" target="_blank">Buy me a coffee</a></div>'
     + '</div></body></html>';
 
   var blob = new Blob([html], { type: 'text/html' });
@@ -800,7 +811,7 @@ function openRecipeTab(recipe) {
     + (ingredientRows ? '<div><h2>Ingredients</h2><ul class="ingredients">' + ingredientRows + '</ul></div>' : '<div></div>')
     + (instructionRows ? '<div><h2>Instructions</h2><ol class="instructions">' + instructionRows + '</ol></div>' : '<div></div>')
     + '</div>'
-    + '<div class="footer"><span>Private AI Summary · Runs entirely on your device · No data sent</span><a href="https://buymeacoffee.com/jtysonwilliams" target="_blank">Buy me a coffee</a></div>'
+    + '<div class="footer"><span>Private AI Summary · Everything stays on your device</span><a href="https://buymeacoffee.com/jtysonwilliams" target="_blank">Buy me a coffee</a></div>'
     + '</body></html>';
 
   const blob = new Blob([html], { type: 'text/html' });
@@ -1361,6 +1372,12 @@ function setLoading(on) {
 }
 
 function setLoadingText(t) { els.loadingText.textContent = t; }
+function setLoadingSub(t)  { els.loadingSub.textContent = t; }
+function setDownloadingState(pct) {
+  setLoadingText(pct == null ? 'Downloading Gemini Nano' : 'Downloading Gemini Nano · ' + pct + '%');
+  setLoadingSub('First-time setup. Chrome is fetching the on-device AI model. This can take a few minutes.');
+}
+function resetLoadingSub() { setLoadingSub('Everything stays on your device'); }
 function showError(msg)     { els.errorText.textContent = msg; els.errorBox.classList.add('visible'); }
 function hideError()        { els.errorBox.classList.remove('visible'); }
 function hideOutput()       { els.output.classList.remove('visible'); }
